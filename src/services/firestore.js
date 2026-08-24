@@ -1,13 +1,12 @@
 import { collection, addDoc, doc, getDoc, getDocs, query, where, orderBy, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db, firebaseReady } from '../firebase';
 
-// Orders
-export async function createOrder(orderData) {
-  if (!firebaseReady) {
-    console.warn('Firebase not configured');
-    return { id: 'demo-' + Date.now(), ...orderData };
-  }
+function requireFirebase() {
+  if (!firebaseReady || !db) throw new Error('Firebase is not configured.');
+}
 
+export async function createOrder(orderData) {
+  requireFirebase();
   const ordersRef = collection(db, 'orders');
   const docRef = await addDoc(ordersRef, {
     ...orderData,
@@ -15,69 +14,40 @@ export async function createOrder(orderData) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
-
   return { id: docRef.id, ...orderData };
 }
 
 export async function getOrder(orderId) {
-  if (!firebaseReady) return null;
-
-  const orderRef = doc(db, 'orders', orderId);
-  const orderSnap = await getDoc(orderRef);
-
-  if (orderSnap.exists()) {
-    return { id: orderSnap.id, ...orderSnap.data() };
-  }
-  return null;
+  requireFirebase();
+  const orderSnap = await getDoc(doc(db, 'orders', orderId));
+  return orderSnap.exists() ? { id: orderSnap.id, ...orderSnap.data() } : null;
 }
 
 export async function getUserOrders(userId) {
-  if (!firebaseReady) return [];
-
-  const ordersRef = collection(db, 'orders');
-  const q = query(
-    ordersRef,
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
-
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  requireFirebase();
+  const q = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 }
 
 export async function updateOrderStatus(orderId, status) {
-  if (!firebaseReady) return;
-
-  const orderRef = doc(db, 'orders', orderId);
-  await updateDoc(orderRef, {
-    status,
-    updatedAt: serverTimestamp(),
-  });
+  requireFirebase();
+  await updateDoc(doc(db, 'orders', orderId), { status, updatedAt: serverTimestamp() });
 }
 
-// Enquiries
 export async function createEnquiry(enquiryData) {
-  if (!firebaseReady) {
-    console.warn('Firebase not configured');
-    return { id: 'demo-' + Date.now(), ...enquiryData };
-  }
-
-  const enquiriesRef = collection(db, 'enquiries');
-  const docRef = await addDoc(enquiriesRef, {
+  requireFirebase();
+  const docRef = await addDoc(collection(db, 'enquiries'), {
     ...enquiryData,
     status: 'new',
     createdAt: serverTimestamp(),
   });
-
   return { id: docRef.id, ...enquiryData };
 }
 
 export async function getEnquiries() {
-  if (!firebaseReady) return [];
-
-  const enquiriesRef = collection(db, 'enquiries');
-  const q = query(enquiriesRef, orderBy('createdAt', 'desc'));
-
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  requireFirebase();
+  const q = query(collection(db, 'enquiries'), orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 }
