@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,7 +11,7 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
+const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId', 'storageBucket'];
 export const firebaseReady = requiredKeys.every(key => {
   const value = firebaseConfig[key];
   return typeof value === 'string' && value.length > 0 && !value.includes('your_');
@@ -18,3 +19,4 @@ export const firebaseReady = requiredKeys.every(key => {
 
 export const app = firebaseReady ? initializeApp(firebaseConfig) : null;
 export const db = firebaseReady ? getFirestore(app) : null;
+export const storage = firebaseReady ? getStorage(app) : null;
