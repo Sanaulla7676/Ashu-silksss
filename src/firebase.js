@@ -10,6 +10,11 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-export const firebaseReady = Boolean(firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('your_'));
+const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
+export const firebaseReady = requiredKeys.every(key => {
+  const value = firebaseConfig[key];
+  return typeof value === 'string' && value.length > 0 && !value.includes('your_');
+});
+
 export const app = firebaseReady ? initializeApp(firebaseConfig) : null;
 export const db = firebaseReady ? getFirestore(app) : null;
