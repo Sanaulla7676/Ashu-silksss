@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
 import { getAllOrders, updateOrderStatusAdmin } from '../services/admin';
 import { money } from '../utils';
-import AdminNav from '../components/AdminNav';
 
 const statusOptions = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
+const paymentBadge = {
+  'reported-paid': { label: 'UPI · customer says paid, verify it', tint: 'bg-amber-100 text-amber-700' },
+  'awaiting-payment': { label: 'UPI · awaiting payment', tint: 'bg-slate-100 text-slate-600' },
+  'pay-on-delivery': { label: 'Cash on delivery', tint: 'bg-blue-100 text-blue-700' },
+};
+
 export default function AdminOrders() {
-  const { user, loading } = useAuth();
-  const [admin, setAdmin] = useState(false);
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (user) user.getIdTokenResult(true).then(r => setAdmin(r.claims.admin === true)).catch(() => setAdmin(false));
-  }, [user]);
 
   const load = async () => {
     setBusy(true);
@@ -25,50 +23,36 @@ export default function AdminOrders() {
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
-  useEffect(() => { if (admin) load(); }, [admin]);
-
-  if (loading) {
-    return (
-      <section className="py-16 md:py-24">
-        <div className="container rounded-md border border-dashed border-ink/15 bg-paper p-10 text-center text-muted">
-          <h2 className="font-display text-ink">Loading...</h2>
-        </div>
-      </section>
-    );
-  }
-  if (!user || !admin) {
-    return (
-      <section className="py-16 md:py-24">
-        <div className="container rounded-md border border-dashed border-ink/15 bg-paper p-10 text-center text-muted">
-          <h2 className="font-display text-ink">Access denied</h2>
-        </div>
-      </section>
-    );
-  }
+  useEffect(() => { load(); }, []);
 
   return (
-    <section className="pb-16 pt-2 md:pb-24">
-      <div className="container">
-        <AdminNav />
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="eyebrow">Ashu Silks</span>
-            <h2 className="heading-xl text-[clamp(1.8rem,4vw,2.6rem)]">Orders</h2>
-            <p className="text-muted">Manage customer orders and fulfillment status.</p>
-          </div>
-          <button className="btn-ghost" onClick={load} disabled={busy}><RefreshCw size={17} /> Refresh</button>
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-slate-900">Orders</h1>
+          <p className="text-sm text-slate-500">Manage customer orders and fulfillment status.</p>
         </div>
-        {error && <p className="mb-4 text-muted">{error}</p>}
-        <div className="grid gap-2.5">
-          {orders.map(o => (
-            <article className="flex flex-col items-start gap-4 rounded border border-ink/10 bg-paper p-4 sm:flex-row sm:items-center sm:justify-between" key={o.id}>
-              <div className="grid gap-0.5">
-                <b className="text-ink">{o.id}</b>
-                <span className="text-sm text-muted">{o.address?.name} · {o.address?.phone}</span>
-                <span className="text-sm text-muted">{o.items?.length || 0} item(s) · {money(o.total)} · {o.address?.city}</span>
+        <button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button>
+      </div>
+      {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
+      {!busy && !orders.length && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">No orders yet.</div>
+      )}
+      <div className="grid gap-2.5">
+        {orders.map(o => {
+          const badge = paymentBadge[o.paymentStatus];
+          return (
+            <article className="dash-card flex flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:justify-between" key={o.id}>
+              <div className="grid gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <b className="text-slate-900">{o.id}</b>
+                  {badge && <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.tint}`}>{badge.label}</span>}
+                </div>
+                <span className="text-sm text-slate-500">{o.address?.name} · {o.address?.phone}</span>
+                <span className="text-sm text-slate-500">{o.items?.length || 0} item(s) · {money(o.total)} · {o.address?.city}</span>
               </div>
               <select
-                className="field w-full sm:w-auto"
+                className="dash-field w-full sm:w-auto"
                 value={o.status || 'pending'}
                 onChange={async e => {
                   await updateOrderStatusAdmin(o.id, e.target.value);
@@ -79,9 +63,9 @@ export default function AdminOrders() {
                 {statusOptions.map(s => <option key={s}>{s}</option>)}
               </select>
             </article>
-          ))}
-        </div>
+          );
+        })}
       </div>
-    </section>
+    </div>
   );
 }

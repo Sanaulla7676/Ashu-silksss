@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -8,6 +8,7 @@ import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { HeroProvider } from './context/HeroContext';
 
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
@@ -18,9 +19,14 @@ const Orders = lazy(() => import('./pages/Orders'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Auth = lazy(() => import('./pages/Auth'));
+
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const AdminOverview = lazy(() => import('./pages/AdminOverview'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminTheme = lazy(() => import('./pages/AdminTheme'));
+const AdminHero = lazy(() => import('./pages/AdminHero'));
+const AdminTeam = lazy(() => import('./pages/AdminTeam'));
 
 function PageFallback() {
   return (
@@ -52,10 +58,23 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function StorefrontLayout() {
+  return (
+    <>
+      <Header />
+      <main>
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
+      <HeroProvider>
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
@@ -74,10 +93,9 @@ export default function App() {
                 success: { iconTheme: { primary: '#388e3c', secondary: '#fff' } },
               }}
             />
-            <Header />
-            <main>
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route element={<StorefrontLayout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:category" element={<Products />} />
@@ -87,19 +105,26 @@ export default function App() {
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                   <Route path="/account" element={<Auth />} />
-                  <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                  <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
-                  <Route path="/admin/theme" element={<ProtectedRoute><AdminTheme /></ProtectedRoute>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </main>
-            <Footer />
+                </Route>
+
+                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                  <Route index element={<AdminOverview />} />
+                  <Route path="products" element={<Admin />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="hero" element={<AdminHero />} />
+                  <Route path="theme" element={<AdminTheme />} />
+                  <Route path="team" element={<AdminTeam />} />
+                </Route>
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
+      </HeroProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

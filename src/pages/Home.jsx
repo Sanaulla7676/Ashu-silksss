@@ -4,6 +4,7 @@ import { ShoppingBag, MessageCircle, Truck, ShieldCheck, Scissors, Award } from 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import ProductGrid from '../components/ProductGrid';
 import { useProducts } from '../hooks/useProducts';
+import { useHero } from '../context/HeroContext';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -24,6 +25,7 @@ const features = [
 
 export default function Home() {
   const { featuredProducts, categories } = useProducts();
+  const { hero } = useHero();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
@@ -33,15 +35,24 @@ export default function Home() {
   return (
     <>
       <section ref={heroRef} className="relative flex min-h-[88vh] items-center overflow-hidden bg-wine-3 md:min-h-[calc(100vh-108px)]">
-        <motion.video
-          className="absolute inset-0 h-full w-full scale-110 object-cover"
-          style={{ y: videoY }}
-          src="/ashuvedio.mp4"
-          autoPlay
-          muted
-          playsInline
-          loop
-        />
+        {hero.type === 'video' ? (
+          <motion.video
+            className="absolute inset-0 h-full w-full scale-110 object-cover"
+            style={{ y: videoY }}
+            src={hero.url}
+            autoPlay
+            muted
+            playsInline
+            loop
+          />
+        ) : (
+          <motion.img
+            className="absolute inset-0 h-full w-full scale-110 object-cover"
+            style={{ y: videoY }}
+            src={hero.url}
+            alt=""
+          />
+        )}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,16,26,.86)_0%,rgba(23,35,55,.62)_45%,rgba(23,35,55,.2)_100%),linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.4))]" />
 
         <motion.div className="container relative z-10 py-16 md:py-24" style={{ y: contentY, opacity: contentOpacity }}>
