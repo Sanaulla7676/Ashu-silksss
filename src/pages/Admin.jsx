@@ -3,7 +3,7 @@ import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus } from 'lu
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
-import { uploadProductImage } from '../services/storage';
+import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 
 const empty = { name: '', category: 'Kanjeevaram Silk', price: '', mrp: '', stock: '0', sku: '', colour: '', fabric: '', occasion: '', description: '', media: '', featured: false };
 const categories = ['Kanjeevaram Silk', 'Bridal', 'Designer', 'Cotton', 'Tissue Silk'];
@@ -131,9 +131,12 @@ export default function Admin() {
             <div className="rounded border border-dashed border-ink/15 bg-ivory p-4">
               <div className="flex items-center gap-2 font-bold text-wine"><ImagePlus size={20} /> Product images</div>
               <p className="mt-1 text-sm text-muted">Upload JPG, PNG, WEBP or AVIF. Maximum 8 MB each.</p>
-              <label className="btn-ghost mt-3 inline-flex cursor-pointer">
+              {!cloudinaryReady && (
+                <p className="mt-1 text-sm font-semibold text-danger">Cloudinary is not configured — add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET, or paste image URLs below directly.</p>
+              )}
+              <label className={`btn-ghost mt-3 inline-flex ${cloudinaryReady ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
                 <Upload size={17} />{uploading ? 'Uploading...' : 'Choose images'}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={chooseFiles} disabled={uploading} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={chooseFiles} disabled={uploading || !cloudinaryReady} />
               </label>
               {preview && <img className="mt-3 h-40 w-32 rounded object-cover" src={preview} alt="Product preview" />}
               <textarea className="field mt-3 min-h-20" placeholder="Uploaded image URLs appear here. One per line." value={form.media} onChange={e => set('media', e.target.value)} />
@@ -157,7 +160,7 @@ export default function Admin() {
               <article className="flex flex-col items-start gap-4 rounded border border-ink/10 bg-paper p-4 sm:flex-row sm:items-center sm:justify-between" key={p.id}>
                 <div className="flex items-center gap-3">
                   {(Array.isArray(p.media) ? p.media[0] : p.media) && (
-                    <img className="h-14 w-14 rounded-xl object-cover" src={Array.isArray(p.media) ? p.media[0] : p.media} alt="" />
+                    <img className="h-14 w-14 rounded object-cover" src={Array.isArray(p.media) ? p.media[0] : p.media} alt="" />
                   )}
                   <div className="grid gap-0.5">
                     <b className="text-ink">{p.name}</b>
