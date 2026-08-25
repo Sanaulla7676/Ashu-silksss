@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, MessageCircle, Truck, ShieldCheck, Scissors, Award, Sparkles } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Truck, ShieldCheck, Scissors, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProductGrid from '../components/ProductGrid';
 import { useProducts } from '../hooks/useProducts';
@@ -44,15 +44,9 @@ export default function Home() {
             initial="hidden"
             animate="show"
           >
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 rounded-full border border-white/22 bg-white/10 px-3.5 py-2 font-extrabold backdrop-blur"
-            >
-              <Sparkles size={16} /> Bengaluru's Trusted Saree Store
-            </motion.span>
             <motion.h1
               variants={fadeUp}
-              className="my-4 font-display text-[clamp(2.2rem,8vw,4.6rem)] font-black leading-[1.02] text-shadow-[0_10px_38px_rgba(0,0,0,.4)]"
+              className="mb-4 font-display text-[clamp(2.2rem,8vw,4.6rem)] font-black leading-[1.02] text-shadow-[0_10px_38px_rgba(0,0,0,.4)]"
             >
               Sarees, sorted by what sells.
             </motion.h1>

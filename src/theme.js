@@ -15,8 +15,8 @@ export const DEFAULT_THEME = {
     muted: '#757575',
   },
   fonts: {
-    display: 'Roboto, ui-sans-serif, system-ui, sans-serif',
-    body: 'Roboto, system-ui, -apple-system, sans-serif',
+    display: 'Poppins, ui-sans-serif, system-ui, sans-serif',
+    body: 'Inter, system-ui, -apple-system, sans-serif',
   },
   radius: 'soft',
 };
