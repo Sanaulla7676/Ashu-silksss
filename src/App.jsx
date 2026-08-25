@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
@@ -19,6 +20,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Auth = lazy(() => import('./pages/Auth'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 
 function PageFallback() {
   return (
@@ -53,6 +55,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
@@ -86,6 +89,7 @@ export default function App() {
                   <Route path="/account" element={<Auth />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
+                  <Route path="/admin/theme" element={<ProtectedRoute><AdminTheme /></ProtectedRoute>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
@@ -96,6 +100,7 @@ export default function App() {
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

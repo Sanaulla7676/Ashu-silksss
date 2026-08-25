@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
+import AdminNav from '../components/AdminNav';
 
 const empty = { name: '', category: 'Kanjeevaram Silk', price: '', mrp: '', stock: '0', sku: '', colour: '', fabric: '', occasion: '', description: '', media: '', featured: false };
 const categories = ['Kanjeevaram Silk', 'Bridal', 'Designer', 'Cotton', 'Tissue Silk'];
@@ -95,6 +96,7 @@ export default function Admin() {
   return (
     <section className="pb-16 pt-2 md:pb-24">
       <div className="container">
+        <AdminNav />
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="eyebrow">Ashu Silks</span>

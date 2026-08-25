@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { getAllOrders, updateOrderStatusAdmin } from '../services/admin';
 import { money } from '../utils';
+import AdminNav from '../components/AdminNav';
 
 const statusOptions = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -48,6 +49,7 @@ export default function AdminOrders() {
   return (
     <section className="pb-16 pt-2 md:pb-24">
       <div className="container">
+        <AdminNav />
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="eyebrow">Ashu Silks</span>
