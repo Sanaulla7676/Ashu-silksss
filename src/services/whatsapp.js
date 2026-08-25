@@ -47,5 +47,11 @@ ${order.address.phone}
 ${order.address.addressLine1}
 ${order.address.addressLine2 ? order.address.addressLine2 + '\n' : ''}${order.address.city}, ${order.address.state} - ${order.address.pincode}
 
-*Payment Method:* ${order.paymentMethod}`;
+*Payment Method:* ${order.paymentMethod}${order.paymentMethod === 'UPI' ? '\n*Payment status:* Customer will confirm once paid' : ''}`;
+}
+
+export function generatePaymentConfirmedMessage(order) {
+  return `Payment reported for Order ${order.id} 💰
+
+The customer says they've completed the UPI payment of ₹${order.total} for order ${order.id}. This is NOT gateway-verified — please check your UPI app before dispatching.`;
 }

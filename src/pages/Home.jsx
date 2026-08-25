@@ -1,6 +1,7 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, MessageCircle, Truck, ShieldCheck, Scissors, Award } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import ProductGrid from '../components/ProductGrid';
 import { useProducts } from '../hooks/useProducts';
 
@@ -23,12 +24,18 @@ const features = [
 
 export default function Home() {
   const { featuredProducts, categories } = useProducts();
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
+  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '-8%']);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
     <>
-      <section className="relative flex min-h-[88vh] items-center overflow-hidden bg-wine-3 md:min-h-[calc(100vh-108px)]">
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
+      <section ref={heroRef} className="relative flex min-h-[88vh] items-center overflow-hidden bg-wine-3 md:min-h-[calc(100vh-108px)]">
+        <motion.video
+          className="absolute inset-0 h-full w-full scale-110 object-cover"
+          style={{ y: videoY }}
           src="/ashuvedio.mp4"
           autoPlay
           muted
@@ -37,7 +44,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,16,26,.86)_0%,rgba(23,35,55,.62)_45%,rgba(23,35,55,.2)_100%),linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.4))]" />
 
-        <div className="container relative z-10 py-16 md:py-24">
+        <motion.div className="container relative z-10 py-16 md:py-24" style={{ y: contentY, opacity: contentOpacity }}>
           <motion.div
             className="max-w-[760px] text-white"
             variants={stagger}
@@ -71,7 +78,7 @@ export default function Home() {
               ))}
             </motion.div>
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
       <section className="py-16 md:py-24">

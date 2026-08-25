@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, Star, BadgeCheck, Truck } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
 import { money, mediaUrl, discountPercent } from '../utils';
@@ -12,6 +12,20 @@ export default function ProductCard({ product }) {
   const { addToWishlist, isInWishlist } = useWishlist();
   const discount = discountPercent(product.price, product.mrp);
   const wished = isInWishlist(product.id);
+
+  const px = useMotionValue(0.5);
+  const py = useMotionValue(0.5);
+  const rotateX = useSpring(useTransform(py, [0, 1], [7, -7]), { stiffness: 260, damping: 22 });
+  const rotateY = useSpring(useTransform(px, [0, 1], [-7, 7]), { stiffness: 260, damping: 22 });
+  const glareX = useTransform(px, v => `${v * 100}%`);
+  const glareY = useTransform(py, v => `${v * 100}%`);
+
+  const handleMove = e => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    px.set((e.clientX - rect.left) / rect.width);
+    py.set((e.clientY - rect.top) / rect.height);
+  };
+  const handleLeave = () => { px.set(0.5); py.set(0.5); };
 
   const handleAdd = e => {
     e.preventDefault();
@@ -27,7 +41,10 @@ export default function ProductCard({ product }) {
 
   return (
     <motion.article
-      className="card-surface group relative overflow-hidden transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.14)]"
+      className="card-surface group relative overflow-hidden [transform-style:preserve-3d] [will-change:transform] hover:shadow-[0_20px_40px_-16px_rgba(0,0,0,0.28)]"
+      style={{ rotateX, rotateY, transformPerspective: 1000 }}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
@@ -35,9 +52,13 @@ export default function ProductCard({ product }) {
     >
       <Link to={`/product/${product.id}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-ivory">
-          <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">
+          <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.04]">
             <ProductMedia url={mediaUrl(product)} />
           </div>
+          <motion.div
+            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            style={{ background: useTransform([glareX, glareY], ([gx, gy]) => `radial-gradient(circle at ${gx} ${gy}, rgba(255,255,255,0.35), transparent 55%)`) }}
+          />
           {discount > 0 && (
             <span className="absolute left-2 top-2 z-[2] rounded-sm bg-gold px-1.5 py-0.5 text-[0.68rem] font-bold text-white">{discount}% OFF</span>
           )}

@@ -17,3 +17,17 @@ export const slugify = str =>
 export const generateOrderId = () => {
   return 'AS' + Date.now().toString().slice(-8);
 };
+
+// Opens the customer's own UPI app (PhonePe/GPay/Paytm/...) with the amount
+// pre-filled. No gateway involved, so there is no programmatic confirmation
+// that the payment succeeded — the caller must get that from the customer.
+export const generateUpiLink = ({ vpa, name, amount, note }) => {
+  const params = new URLSearchParams({
+    pa: vpa,
+    pn: name,
+    am: String(Math.round(amount)),
+    cu: 'INR',
+    tn: note || '',
+  });
+  return `upi://pay?${params.toString()}`;
+};

@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, CreditCard, MapPin, MessageCircle, ShoppingBag } from 'lucide-react';
+import { CheckCircle, CreditCard, MapPin, MessageCircle, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
-import { createOrder } from '../services/firestore';
-import { generateOrderMessage, generateWhatsAppLink } from '../services/whatsapp';
-import { generateOrderId, money } from '../utils';
+import { createOrder, markOrderPaymentReported } from '../services/firestore';
+import { generateOrderMessage, generatePaymentConfirmedMessage, generateWhatsAppLink } from '../services/whatsapp';
+import { storeInfo } from '../data';
+import { generateOrderId, generateUpiLink, money } from '../utils';
 
 const steps = ['Address', 'Payment', 'Review'];
-const paymentMethods = ['Cash on Delivery', 'UPI on Delivery', 'Pay at Store'];
+const paymentMethods = [
+  { id: 'Cash on Delivery', icon: Truck, text: 'Pay with cash when your order arrives.' },
+  { id: 'UPI', icon: Smartphone, text: 'Pay instantly with PhonePe, Google Pay, Paytm or any UPI app.' },
+];
 
 function EmptyState({ icon: Icon, title, text, cta, to }) {
   return (
@@ -33,6 +37,9 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
   const [order, setOrder] = useState(null);
+  const [payClicked, setPayClicked] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [address, setAddress] = useState({ name: user?.displayName || '', phone: '', addressLine1: '', addressLine2: '', city: 'Bengaluru', state: 'Karnataka', pincode: '', notes: '' });
   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
 
@@ -54,17 +61,80 @@ export default function Checkout() {
       const orderData = {
         customerUid: user.uid,
         items: cart.map(({ id, name, price, quantity, sku, media }) => ({ id, name, price, quantity, sku, media })),
-        subtotal, delivery, total, address, paymentMethod, userId: user.uid,
+        subtotal, delivery, total, address, paymentMethod,
+        paymentStatus: paymentMethod === 'UPI' ? 'awaiting-payment' : 'pay-on-delivery',
+        userId: user.uid,
       };
       const savedOrder = await createOrder(orderData);
-      setOrder(savedOrder); clearCart();
-      window.open(generateWhatsAppLink(generateOrderMessage({ ...savedOrder, id: savedOrder.id || generateOrderId() })), '_blank');
+      const fullOrder = { ...savedOrder, id: savedOrder.id || generateOrderId() };
+      setOrder(fullOrder); clearCart();
+      window.open(generateWhatsAppLink(generateOrderMessage(fullOrder)), '_blank');
+
+      if (paymentMethod === 'UPI') {
+        const upiLink = generateUpiLink({ vpa: storeInfo.upiId, name: storeInfo.name, amount: total, note: `Ashu Silks order ${fullOrder.id}` });
+        setPayClicked(true);
+        window.location.href = upiLink;
+      }
     } catch (err) {
       setError(err?.message || 'Unable to place your order. Please try again.');
     } finally { setPlacing(false); }
   };
 
-  if (order) {
+  const confirmPayment = async () => {
+    setConfirming(true);
+    try {
+      await markOrderPaymentReported(order.id);
+      window.open(generateWhatsAppLink(generatePaymentConfirmedMessage(order)), '_blank');
+      setPaymentConfirmed(true);
+    } catch (err) {
+      setError(err?.message || 'Could not record payment. Please try again.');
+    } finally { setConfirming(false); }
+  };
+
+  // UPI order placed but not yet confirmed by the customer — show the pay
+  // action and, once tapped, the "did it go through" confirmation.
+  if (order && paymentMethod === 'UPI' && !paymentConfirmed) {
+    return (
+      <section className="py-16 md:py-24">
+        <div className="container">
+          <motion.div
+            className="card-surface mx-auto max-w-xl p-8 text-center sm:p-12"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Smartphone size={56} className="mx-auto text-wine" />
+            <h1 className="mt-4 font-display text-2xl text-ink sm:text-3xl">Pay {money(total)} via UPI</h1>
+            <p className="mt-2 text-muted">
+              Order <b className="text-ink">{order.id}</b> is saved. {payClicked ? 'Complete the payment in your UPI app, then confirm below.' : 'Tap below to pay with any UPI app — the amount is pre-filled.'}
+            </p>
+            {error && <p className="mt-3 font-bold text-danger">{error}</p>}
+            {!payClicked ? (
+              <button
+                className="btn-primary mt-6"
+                onClick={() => {
+                  const upiLink = generateUpiLink({ vpa: storeInfo.upiId, name: storeInfo.name, amount: total, note: `Ashu Silks order ${order.id}` });
+                  setPayClicked(true);
+                  window.location.href = upiLink;
+                }}
+              >
+                <Smartphone size={18} /> Pay {money(total)} via UPI
+              </button>
+            ) : (
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <button className="btn-primary" disabled={confirming} onClick={confirmPayment}>
+                  <CheckCircle size={18} /> {confirming ? 'Confirming...' : "Yes, I've paid"}
+                </button>
+                <button className="btn-ghost" onClick={() => setPayClicked(false)}>Open UPI app again</button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  if (order && (paymentMethod !== 'UPI' || paymentConfirmed)) {
+    const paid = paymentMethod === 'UPI' && paymentConfirmed;
     return (
       <section className="py-16 md:py-24">
         <div className="container">
@@ -74,8 +144,18 @@ export default function Checkout() {
             animate={{ opacity: 1, y: 0 }}
           >
             <CheckCircle size={64} className="mx-auto text-success" />
-            <h1 className="mt-4 font-display text-2xl text-ink sm:text-3xl">Order placed successfully!</h1>
-            <p className="mt-2 text-muted">Your order ID is <b className="text-ink">{order.id}</b>. We opened WhatsApp with order details for quick confirmation.</p>
+            {paid && (
+              <span className="mt-4 inline-block rounded-[var(--radius-btn)] bg-success px-4 py-1.5 text-lg font-black tracking-wide text-white">PAID</span>
+            )}
+            <h1 className="mt-4 font-display text-2xl text-ink sm:text-3xl">{paid ? 'Order confirmed & paid!' : 'Order placed successfully!'}</h1>
+            <p className="mt-2 text-muted">
+              Your order ID is <b className="text-ink">{order.id}</b>.{' '}
+              {paid
+                ? "We've notified the store of your payment — they'll confirm and pack shortly."
+                : paymentMethod === 'Cash on Delivery'
+                  ? 'Pay in cash when your order arrives.'
+                  : 'We opened WhatsApp with order details for quick confirmation.'}
+            </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Link className="btn-primary" to="/products">Continue shopping</Link>
               <button className="btn-ghost" onClick={() => navigate('/orders')}>View orders</button>
@@ -136,9 +216,18 @@ export default function Checkout() {
                   <h3 className="flex items-center gap-2 text-ink"><CreditCard size={20} /> Payment Method</h3>
                   <div className="mt-3 grid gap-2.5">
                     {paymentMethods.map(method => (
-                      <label className="flex items-center gap-3 rounded border border-ink/15 bg-ivory p-4 font-semibold" key={method}>
-                        <input type="radio" checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
-                        <span>{method}</span>
+                      <label
+                        className={`flex items-start gap-3 rounded border p-4 ${paymentMethod === method.id ? 'border-wine bg-wine/5' : 'border-ink/15 bg-ivory'}`}
+                        key={method.id}
+                      >
+                        <input className="mt-1" type="radio" checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} />
+                        <span className="flex items-start gap-2.5">
+                          <method.icon size={20} className="mt-0.5 shrink-0 text-wine" />
+                          <span>
+                            <span className="block font-semibold text-ink">{method.id}</span>
+                            <span className="block text-sm text-muted">{method.text}</span>
+                          </span>
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -154,12 +243,17 @@ export default function Checkout() {
                   <h3 className="flex items-center gap-2 text-ink"><CheckCircle size={20} /> Review & Confirm</h3>
                   <p className="mt-3"><b>Deliver to:</b> {address.name}, {address.addressLine1}, {address.city} - {address.pincode}</p>
                   <p className="mt-1"><b>Payment:</b> {paymentMethod}</p>
-                  <p className="mt-1 text-muted">The order is securely saved to your account and then shared with the store through WhatsApp.</p>
+                  <p className="mt-1 text-muted">
+                    {paymentMethod === 'UPI'
+                      ? "You'll be redirected to your UPI app to pay, then come back here to confirm."
+                      : 'The order is securely saved to your account and then shared with the store through WhatsApp.'}
+                  </p>
                   {error && <p className="mt-2 font-bold text-danger">{error}</p>}
                   <div className="mt-4 flex flex-wrap gap-2.5">
                     <button className="btn-ghost" onClick={() => setStep(2)}>Back</button>
                     <button className="btn-primary" disabled={placing} onClick={placeOrder}>
-                      <MessageCircle size={18} /> {placing ? 'Placing...' : 'Place Order'}
+                      {paymentMethod === 'UPI' ? <Smartphone size={18} /> : <MessageCircle size={18} />}
+                      {placing ? 'Placing...' : paymentMethod === 'UPI' ? 'Place Order & Pay' : 'Place Order'}
                     </button>
                   </div>
                 </motion.div>

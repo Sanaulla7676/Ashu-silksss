@@ -35,6 +35,14 @@ export async function updateOrderStatus(orderId, status) {
   await updateDoc(doc(db, 'orders', orderId), { status, updatedAt: serverTimestamp() });
 }
 
+// paymentStatus is customer-reported, not gateway-verified — there is no
+// merchant payment gateway wired up, so this only records what the
+// customer told us; the store owner should cross-check their UPI app.
+export async function markOrderPaymentReported(orderId) {
+  requireFirebase();
+  await updateDoc(doc(db, 'orders', orderId), { paymentStatus: 'reported-paid', updatedAt: serverTimestamp() });
+}
+
 export async function createEnquiry(enquiryData) {
   requireFirebase();
   const docRef = await addDoc(collection(db, 'enquiries'), {
