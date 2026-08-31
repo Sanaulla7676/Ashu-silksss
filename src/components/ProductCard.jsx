@@ -67,7 +67,7 @@ export default function ProductCard({ product }) {
             onClick={handleWishlist}
             aria-label="Add to wishlist"
           >
-            <Heart size={16} fill={wished ? '#cc0c39' : 'none'} stroke={wished ? '#cc0c39' : 'currentColor'} />
+            <Heart size={16} fill={wished ? 'var(--color-gold)' : 'none'} stroke={wished ? 'var(--color-gold)' : 'currentColor'} />
           </button>
           {product.stock <= 2 && (
             <span className="absolute bottom-2 left-2 z-[2] rounded-sm bg-danger/90 px-1.5 py-0.5 text-[0.66rem] font-bold text-white">Only {product.stock} left</span>

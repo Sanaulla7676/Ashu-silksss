@@ -37,8 +37,8 @@ export default function Header() {
       <div className="bg-wine">
         <div className="container flex items-center gap-4 py-2.5 sm:py-3">
           <Link className="flex shrink-0 flex-col leading-none text-white" to="/" onClick={close}>
-            <span className="flex items-center gap-1 text-lg font-black italic sm:text-xl"><Sparkles size={18} className="not-italic" /> Ashu Silks</span>
-            <span className="hidden text-[0.68rem] font-medium text-gold-2 sm:block">Explore <span className="italic">Premium Sarees ✦</span></span>
+            <span className="flex items-center gap-1.5 font-display text-xl font-semibold tracking-wide sm:text-2xl"><Sparkles size={18} /> Ashu Silks</span>
+            <span className="hidden text-[0.68rem] font-medium text-gold-2 sm:block">Pure Silk Emporium</span>
           </Link>
 
           <form className="hidden flex-1 items-center gap-2 rounded bg-white px-3.5 py-2.5 text-ink sm:flex" onSubmit={submitSearch}>

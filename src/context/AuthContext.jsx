@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { app, firebaseReady } from '../firebase';
 
 const AuthContext = createContext(null);
@@ -37,6 +37,10 @@ export function AuthProvider({ children }) {
     async logout() {
       if (firebaseReady && app) await signOut(getAuth(app));
       setUser(null);
+    },
+    async resetPassword(email) {
+      if (!firebaseReady || !app) throw new Error('Firebase authentication is not configured.');
+      return sendPasswordResetEmail(getAuth(app), email);
     },
   }), [user, loading]);
 

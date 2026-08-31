@@ -156,7 +156,7 @@ export default function ProductDetail() {
               <button className="btn-primary" onClick={handleAdd}><ShoppingBag size={18} /> Add to Cart</button>
               <button className="btn-dark" onClick={() => setEnquiryOpen(true)}><MessageCircle size={18} /> Enquire</button>
               <button className="btn-ghost" onClick={handleWishlist}>
-                <Heart size={18} fill={wished ? '#cc0c39' : 'none'} stroke={wished ? '#cc0c39' : 'currentColor'} /> Wishlist
+                <Heart size={18} fill={wished ? 'var(--color-gold)' : 'none'} stroke={wished ? 'var(--color-gold)' : 'currentColor'} /> Wishlist
               </button>
               <button className="btn-ghost" onClick={() => navigator.share?.({ title: product.name, url: location.href })}>
                 <Share2 size={18} /> Share

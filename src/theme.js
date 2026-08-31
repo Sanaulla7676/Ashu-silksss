@@ -4,18 +4,18 @@
 
 export const DEFAULT_THEME = {
   colors: {
-    wine: '#2874f0',
-    wine2: '#1a56c4',
-    wine3: '#172337',
-    gold: '#ff9f00',
-    gold2: '#fb641b',
-    ivory: '#f1f3f6',
-    paper: '#ffffff',
-    ink: '#212121',
-    muted: '#757575',
+    wine: '#5E0715',
+    wine2: '#3F060D',
+    wine3: '#2b0509',
+    gold: '#C89A3D',
+    gold2: '#dcb96b',
+    ivory: '#F8F3EA',
+    paper: '#FFFCF7',
+    ink: '#241A16',
+    muted: '#806F62',
   },
   fonts: {
-    display: 'Poppins, ui-sans-serif, system-ui, sans-serif',
+    display: '"Cormorant Garamond", ui-serif, Georgia, serif',
     body: 'Inter, system-ui, -apple-system, sans-serif',
   },
   radius: 'soft',
@@ -39,14 +39,19 @@ export const RADIUS_LABELS = {
 // site's mood at once, not just one accent color.
 export const COLOR_PRESETS = [
   {
-    id: 'flipkart-blue',
-    name: 'Marketplace Blue',
+    id: 'silk-heritage',
+    name: 'Silk Heritage',
     colors: DEFAULT_THEME.colors,
   },
   {
     id: 'wine-gold',
-    name: 'Wine & Gold',
+    name: 'Wine & Gold Classic',
     colors: { wine: '#5c1330', wine2: '#33091c', wine3: '#160711', gold: '#c9a227', gold2: '#efd978', ivory: '#fbf6ec', paper: '#fffaf1', ink: '#211411', muted: '#6d5b54' },
+  },
+  {
+    id: 'flipkart-blue',
+    name: 'Marketplace Blue',
+    colors: { wine: '#2874f0', wine2: '#1a56c4', wine3: '#172337', gold: '#ff9f00', gold2: '#fb641b', ivory: '#f1f3f6', paper: '#ffffff', ink: '#212121', muted: '#757575' },
   },
   {
     id: 'emerald',

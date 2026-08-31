@@ -1,27 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  /* Flipkart-style palette. Token names kept stable so every component
-     that already references them (text-wine, bg-gold, etc.) repaints. */
-  --color-wine: #2874f0;      /* primary chrome / links (was maroon) */
-  --color-wine-2: #1a56c4;    /* pressed/darker blue */
-  --color-wine-3: #172337;    /* deep navy — hero overlay, footer */
-  --color-gold: #ff9f00;      /* CTA orange (was gold) */
-  --color-gold-2: #fb641b;    /* CTA orange-red, secondary action */
-  --color-ivory: #f1f3f6;     /* page background */
-  --color-paper: #ffffff;     /* card/surface background */
-  --color-ink: #212121;       /* primary text */
-  --color-muted: #757575;     /* secondary text */
+  /* Silk Heritage palette — a premium wine/gold identity. Token names
+     kept stable so every component that already references them
+     (text-wine, bg-gold, etc.) repaints when the theme changes. */
+  --color-wine: #5E0715;      /* primary — deep wine */
+  --color-wine-2: #3F060D;    /* pressed/darker wine */
+  --color-wine-3: #2b0509;    /* deep — hero overlay, footer */
+  --color-gold: #C89A3D;      /* accent — muted gold */
+  --color-gold-2: #dcb96b;    /* accent, lighter */
+  --color-ivory: #F8F3EA;     /* page background */
+  --color-paper: #FFFCF7;     /* card/surface background */
+  --color-ink: #241A16;       /* primary text */
+  --color-muted: #806F62;     /* secondary text */
   --color-success: #388e3c;   /* rating badge / discount green */
   --color-success-bg: #e9f7ea;
   --color-danger: #cc0c39;
 
-  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 
-  --shadow-soft: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
-  --shadow-lift: 0 8px 24px -12px rgba(23, 35, 55, 0.35);
+  --shadow-soft: 0 2px 10px -6px rgba(36, 26, 22, 0.14);
+  --shadow-lift: 0 14px 32px -18px rgba(36, 26, 22, 0.3);
 
   --animate-fade-up: fade-up 0.6s ease both;
   --animate-shimmer: shimmer 1.8s ease-in-out infinite;
@@ -78,10 +79,10 @@
   .btn-dark,
   .btn-ghost,
   .btn-outline-light {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[var(--radius-btn)] border-0 px-5 py-3 font-bold uppercase tracking-wide text-[0.86rem] transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[var(--radius-btn)] border-0 px-5 py-3 font-bold uppercase tracking-wide text-[0.78rem] transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-gold text-white shadow-[var(--shadow-soft)] hover:bg-[#e08e00];
+    @apply bg-wine text-white shadow-[var(--shadow-soft)] hover:-translate-y-px hover:brightness-110;
   }
   .btn-dark {
     @apply bg-wine text-white shadow-[var(--shadow-soft)] hover:bg-wine-2;
@@ -102,7 +103,7 @@
   }
 
   .card-surface {
-    @apply rounded border border-ink/10 bg-paper shadow-[var(--shadow-soft)];
+    @apply rounded-lg border border-ink/10 bg-paper shadow-[var(--shadow-soft)];
   }
 
   .skeleton {
