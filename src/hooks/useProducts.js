@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLiveProducts } from '../services/liveCatalog';
-import { demoProducts } from '../data';
 
 export function useProducts({ category = 'All', search = '', sort = 'featured' } = {}) {
   const [catalog, setCatalog] = useState([]);
@@ -10,8 +9,8 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
   useEffect(() => {
     let active = true;
     fetchLiveProducts()
-      .then(items => { if (active) setCatalog(items.length ? items : demoProducts); })
-      .catch(err => { if (active) { setError(err?.message || 'Unable to load catalogue.'); setCatalog(demoProducts); } })
+      .then(items => { if (active) setCatalog(items); })
+      .catch(err => { if (active) { setError(err?.message || 'Unable to load catalogue.'); setCatalog([]); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
@@ -34,13 +33,4 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
   const categories = useMemo(() => ['All', ...new Set(catalog.map(p => p.category).filter(Boolean))], [catalog]);
   const featuredProducts = useMemo(() => catalog.filter(p => p.featured && Number(p.stock ?? 0) > 0).slice(0, 8), [catalog]);
   return { products, categories, featuredProducts, allProducts: catalog, loading, error };
-}
-
-export function getProductById(id) {
-  return demoProducts.find(p => p.id === id);
-}
-
-export function getRelatedProducts(product, limit = 4) {
-  if (!product) return [];
-  return demoProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, limit);
 }

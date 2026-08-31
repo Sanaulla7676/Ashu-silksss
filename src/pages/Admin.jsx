@@ -6,7 +6,7 @@ import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteC
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 
 const empty = {
-  name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'draft',
+  name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
   price: '', mrp: '', gstPercent: '5', stock: '0',
   colour: '', fabric: '', pattern: '', occasion: '', workType: '', blousePiece: 'Included',
   sareeLength: '6.3 metres with blouse piece', washCare: 'Dry clean only', countryOfOrigin: 'India', weight: '',
@@ -138,13 +138,13 @@ export default function Admin() {
 
           <Section title="Basic info">
             <input className="dash-field" required placeholder="Product title" value={form.name} onChange={e => set('name', e.target.value)} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" placeholder="Brand" value={form.brand} onChange={e => set('brand', e.target.value)} />
               <select className="dash-field" required value={form.category} onChange={e => set('category', e.target.value)}>
                 {categories.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" required placeholder="SKU" value={form.sku} onChange={e => set('sku', e.target.value)} />
               <select className="dash-field" value={form.status} onChange={e => set('status', e.target.value)}>
                 <option value="draft">Draft (hidden)</option>
@@ -154,22 +154,22 @@ export default function Admin() {
           </Section>
 
           <Section title="Pricing, tax & stock">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" required type="number" min="0" step="1" placeholder="Selling price (₹)" value={form.price} onChange={e => set('price', e.target.value)} />
               <input className="dash-field" type="number" min="0" step="1" placeholder="MRP (₹)" value={form.mrp} onChange={e => set('mrp', e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" type="number" min="0" step="0.1" placeholder="GST %" value={form.gstPercent} onChange={e => set('gstPercent', e.target.value)} />
               <input className="dash-field" required type="number" min="0" step="1" placeholder="Stock quantity" value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
           </Section>
 
           <Section title="Saree details">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" placeholder="Colour" value={form.colour} onChange={e => set('colour', e.target.value)} />
               <input className="dash-field" placeholder="Fabric" value={form.fabric} onChange={e => set('fabric', e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <select className="dash-field" value={form.pattern} onChange={e => set('pattern', e.target.value)}>
                 <option value="">Pattern...</option>
                 {patternOptions.map(p => <option key={p}>{p}</option>)}
@@ -177,13 +177,13 @@ export default function Admin() {
               <input className="dash-field" placeholder="Occasion" value={form.occasion} onChange={e => set('occasion', e.target.value)} />
             </div>
             <input className="dash-field" placeholder="Ornamentation / work (e.g. Zari, Hand embroidery)" value={form.workType} onChange={e => set('workType', e.target.value)} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <select className="dash-field" value={form.blousePiece} onChange={e => set('blousePiece', e.target.value)}>
                 {blouseOptions.map(b => <option key={b}>{b}</option>)}
               </select>
               <input className="dash-field" placeholder="Saree length" value={form.sareeLength} onChange={e => set('sareeLength', e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" placeholder="Wash care" value={form.washCare} onChange={e => set('washCare', e.target.value)} />
               <input className="dash-field" placeholder="Country of origin" value={form.countryOfOrigin} onChange={e => set('countryOfOrigin', e.target.value)} />
             </div>

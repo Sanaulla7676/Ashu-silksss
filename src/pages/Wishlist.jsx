@@ -1,13 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ProductGrid from '../components/ProductGrid';
 import { useWishlist } from '../hooks/useWishlist';
-import { demoProducts } from '../data';
+import { fetchLiveProducts } from '../services/liveCatalog';
 
 export default function Wishlist() {
   const { wishlist } = useWishlist();
-  const products = demoProducts.filter(p => wishlist.includes(p.id));
+  const [catalog, setCatalog] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchLiveProducts().then(items => { if (active) setCatalog(items); });
+    return () => { active = false; };
+  }, []);
+
+  const products = catalog.filter(p => wishlist.includes(p.id));
 
   return (
     <>
