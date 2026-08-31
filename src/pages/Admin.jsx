@@ -7,7 +7,7 @@ import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
-  price: '', mrp: '', gstPercent: '5', stock: '0',
+  price: '', mrp: '', gstPercent: '5', stock: '',
   colour: '', fabric: '', pattern: '', occasion: '', workType: '', blousePiece: 'Included',
   sareeLength: '6.3 metres with blouse piece', washCare: 'Dry clean only', countryOfOrigin: 'India', weight: '',
   description: '', highlights: '', tags: '',
@@ -36,6 +36,7 @@ export default function Admin() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState('');
+  const [stockDrafts, setStockDrafts] = useState({});
 
   const load = async () => {
     setBusy(true); setError('');
@@ -117,12 +118,25 @@ export default function Admin() {
 
   const clear = () => { setEditing(null); setForm(empty); setPreview(''); };
 
+  const stockValue = p => stockDrafts[p.id] ?? String(p.stock ?? 0);
+  const setStockDraft = (id, v) => setStockDrafts(d => ({ ...d, [id]: v }));
+  const saveStock = async p => {
+    const value = Number(stockDrafts[p.id]);
+    if (Number.isNaN(value) || value < 0) { toast.error('Enter a valid stock number'); return; }
+    try {
+      await updateCatalogProduct(p.id, { stock: value });
+      toast.success(`${p.name || 'Product'} stock updated`);
+      setStockDrafts(d => { const next = { ...d }; delete next[p.id]; return next; });
+      await load();
+    } catch (e) { toast.error(e.message); }
+  };
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900">Products</h1>
-          <p className="text-sm text-slate-500">Manage catalogue, stock, pricing and images. New products save as Draft — switch Status to Active to make them public.</p>
+          <p className="text-sm text-slate-500">Manage catalogue, stock, pricing and images. New products publish live immediately — a product also needs Stock above 0 to actually show on the site.</p>
         </div>
         <button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button>
       </div>
@@ -235,14 +249,35 @@ export default function Admin() {
                   <img className="h-14 w-14 rounded-lg object-cover" src={Array.isArray(p.media) ? p.media[0] : p.media} alt="" />
                 )}
                 <div className="grid gap-0.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <b className="text-slate-900">{p.name || 'Untitled product'}</b>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {p.status === 'active' ? 'Active' : 'Draft'}
                     </span>
+                    {p.status === 'active' && Number(p.stock ?? 0) <= 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Hidden — 0 stock</span>
+                    )}
                   </div>
                   <span className="text-sm text-slate-500">{p.sku || 'no SKU'} · {p.category}</span>
-                  <span className="text-sm text-slate-500">₹{p.price || 0} · Stock: {p.stock ?? 0} · {(Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0))} photo(s)</span>
+                  <span className="text-sm text-slate-500">₹{p.price || 0} · {(Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0))} photo(s)</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-slate-500">Stock</label>
+                    <input
+                      type="number" min="0" step="1"
+                      className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                      value={stockValue(p)}
+                      onChange={e => setStockDraft(p.id, e.target.value)}
+                    />
+                    {stockDrafts[p.id] !== undefined && stockDrafts[p.id] !== String(p.stock ?? 0) && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700"
+                        onClick={() => saveStock(p)}
+                      >
+                        <Save size={12} /> Save
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex w-full items-center gap-2 sm:w-auto">
