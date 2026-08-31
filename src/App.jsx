@@ -27,6 +27,7 @@ const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 const AdminHero = lazy(() => import('./pages/AdminHero'));
 const AdminTeam = lazy(() => import('./pages/AdminTeam'));
+const AdminImport = lazy(() => import('./pages/AdminImport'));
 
 function PageFallback() {
   return (
@@ -112,6 +113,7 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<AdminOverview />} />
                   <Route path="products" element={<Admin />} />
+                  <Route path="import" element={<AdminImport />} />
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="theme" element={<AdminTheme />} />

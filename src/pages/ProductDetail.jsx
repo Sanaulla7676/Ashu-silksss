@@ -114,6 +114,15 @@ export default function ProductDetail() {
               <span>SKU: {product.sku}</span>
             </div>
             <p className="lead mt-4">{product.description}</p>
+            {Array.isArray(product.highlights) && product.highlights.length > 0 && (
+              <ul className="mt-3 grid gap-1.5">
+                {product.highlights.map((h, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                    <CheckCircle size={14} className="mt-0.5 shrink-0 text-success" /> {h}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="my-5 flex flex-wrap items-center gap-3.5">
               <b className="text-3xl text-ink">{money(product.price)}</b>
               {product.mrp && <s className="text-lg text-muted">{money(product.mrp)}</s>}
@@ -124,7 +133,16 @@ export default function ProductDetail() {
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {[['Colour', product.colour], ['Fabric', product.fabric], ['Occasion', product.occasion], ['Care', product.care]].map(([label, value]) => (
+              {[
+                ['Colour', product.colour],
+                ['Fabric', product.fabric],
+                ['Occasion', product.occasion],
+                ['Pattern', product.pattern],
+                ['Work', product.workType],
+                ['Blouse', product.blousePiece],
+                ['Length', product.sareeLength],
+                ['Care', product.washCare || product.care],
+              ].filter(([, value]) => value).map(([label, value]) => (
                 <div key={label} className="rounded border border-ink/10 bg-ivory p-3.5">
                   <span className="block text-[0.82rem] text-muted">{label}</span>
                   <b className="text-ink">{value}</b>
