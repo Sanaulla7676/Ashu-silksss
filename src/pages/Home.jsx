@@ -162,23 +162,40 @@ export default function Home() {
           className="absolute inset-x-6 bottom-28 z-[4] max-w-xl text-white sm:left-[6vw] sm:right-auto md:bottom-32"
           variants={stagger} initial="hidden" animate="show"
         >
-          <motion.span variants={fadeUp} className="mb-4 block text-xs font-bold uppercase tracking-[0.28em] text-gold-2">
-            Ashu Silks · Pure Silk
-          </motion.span>
+          {hero.eyebrow && (
+            <motion.span variants={fadeUp} className="mb-4 block text-xs font-bold uppercase tracking-[0.28em] text-gold-2">
+              {hero.eyebrow}
+            </motion.span>
+          )}
           <motion.h1 variants={fadeUp} className="font-display text-[clamp(2.4rem,7vw,5.2rem)] font-bold italic leading-[0.95]">
-            Drape in <span className="text-gold-2">timeless silk.</span>
+            {hero.headline} {hero.headlineAccent && <span className="text-gold-2">{hero.headlineAccent}</span>}
           </motion.h1>
-          <motion.p variants={fadeUp} className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-white/85">
-            Refined sarees for weddings, celebrations and the moments you keep forever — chosen for their weave, zari and drape.
-          </motion.p>
-          <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-5">
-            <Link className="btn-primary" to="/products">
-              <ShoppingBag size={16} /> Shop Silk Sarees
-            </Link>
-            <Link className="border-b border-white/50 pb-1 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:border-gold-2 hover:text-gold-2" to="/products">
-              Explore Collections ↗
-            </Link>
-          </motion.div>
+          {hero.subtext && (
+            <motion.p variants={fadeUp} className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-white/85">
+              {hero.subtext}
+            </motion.p>
+          )}
+          {Array.isArray(hero.buttons) && hero.buttons.length > 0 && (
+            <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-5">
+              {hero.buttons.map((btn, i) => {
+                const isInternal = !/^https?:\/\//.test(btn.link || '');
+                const className =
+                  btn.style === 'dark' ? 'btn-dark' :
+                  btn.style === 'ghost' ? 'btn-ghost border-white/60 text-white hover:bg-white/10' :
+                  btn.style === 'link' ? 'border-b border-white/50 pb-1 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:border-gold-2 hover:text-gold-2' :
+                  'btn-primary';
+                return isInternal ? (
+                  <Link key={i} className={className} to={btn.link || '/products'}>
+                    {btn.style !== 'link' && <ShoppingBag size={16} />} {btn.label}
+                  </Link>
+                ) : (
+                  <a key={i} className={className} href={btn.link} target="_blank" rel="noreferrer">
+                    {btn.style !== 'link' && <ShoppingBag size={16} />} {btn.label}
+                  </a>
+                );
+              })}
+            </motion.div>
+          )}
           <motion.div variants={fadeUp} className="mt-8 flex gap-6">
             {[['100%', 'Pure Silk'], ['Handpicked', 'Curated Weaves'], ['Secure', 'Payments']].map(([b, s]) => (
               <span key={s} className="border-l border-white/25 pl-3.5">
