@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 import ProductMedia from '../components/ProductMedia';
 import { useProducts } from '../hooks/useProducts';
-import { useHero } from '../context/HeroContext';
+import { useHero, DEFAULT_HERO, heroButtonClass, heroButtonStyle } from '../context/HeroContext';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { createEnquiry } from '../services/firestore';
@@ -158,53 +158,70 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(20,7,15,.82)_0%,rgba(23,15,15,.42)_45%,rgba(23,15,15,.08)_100%),linear-gradient(0deg,rgba(15,7,10,.7)_0%,transparent_38%)]" />
         <div className="pointer-events-none absolute right-[8%] top-[10%] hidden h-64 w-64 rounded-t-full border border-gold/25 lg:block" />
 
-        <motion.div
-          className="absolute inset-x-6 bottom-28 z-[4] max-w-xl text-white sm:left-[6vw] sm:right-auto md:bottom-32"
-          variants={stagger} initial="hidden" animate="show"
-        >
-          {hero.eyebrow && (
-            <motion.span variants={fadeUp} className="mb-4 block text-xs font-bold uppercase tracking-[0.28em] text-gold-2">
-              {hero.eyebrow}
-            </motion.span>
-          )}
-          <motion.h1 variants={fadeUp} className="font-display text-[clamp(2.4rem,7vw,5.2rem)] font-bold italic leading-[0.95]">
-            {hero.headline} {hero.headlineAccent && <span className="text-gold-2">{hero.headlineAccent}</span>}
-          </motion.h1>
-          {hero.subtext && (
-            <motion.p variants={fadeUp} className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-white/85">
-              {hero.subtext}
-            </motion.p>
-          )}
-          {Array.isArray(hero.buttons) && hero.buttons.length > 0 && (
-            <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-5">
-              {hero.buttons.map((btn, i) => {
-                const isInternal = !/^https?:\/\//.test(btn.link || '');
-                const className =
-                  btn.style === 'dark' ? 'btn-dark' :
-                  btn.style === 'ghost' ? 'btn-ghost border-white/60 text-white hover:bg-white/10' :
-                  btn.style === 'link' ? 'border-b border-white/50 pb-1 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:border-gold-2 hover:text-gold-2' :
-                  'btn-primary';
-                return isInternal ? (
-                  <Link key={i} className={className} to={btn.link || '/products'}>
-                    {btn.style !== 'link' && <ShoppingBag size={16} />} {btn.label}
-                  </Link>
-                ) : (
-                  <a key={i} className={className} href={btn.link} target="_blank" rel="noreferrer">
-                    {btn.style !== 'link' && <ShoppingBag size={16} />} {btn.label}
-                  </a>
-                );
-              })}
-            </motion.div>
-          )}
-          <motion.div variants={fadeUp} className="mt-8 flex gap-6">
-            {[['100%', 'Pure Silk'], ['Handpicked', 'Curated Weaves'], ['Secure', 'Payments']].map(([b, s]) => (
-              <span key={s} className="border-l border-white/25 pl-3.5">
-                <b className="block text-[0.72rem] font-bold uppercase tracking-wide">{b}</b>
-                <small className="text-[0.68rem] text-white/70">{s}</small>
-              </span>
-            ))}
-          </motion.div>
-        </motion.div>
+        {(() => {
+          const align = hero.textAlign || 'left';
+          const alignItems = align === 'center' ? 'items-center text-center' : align === 'right' ? 'items-end text-right' : 'items-start text-left';
+          const justify = align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start';
+          const tPos = hero.textPosition || DEFAULT_HERO.textPosition;
+          const bPos = hero.buttonsPosition || DEFAULT_HERO.buttonsPosition;
+          return (
+            <>
+              <motion.div
+                className={`absolute z-[4] flex max-w-xl flex-col text-white ${alignItems}`}
+                style={{ left: `${tPos.x}%`, top: `${tPos.y}%`, right: '4%' }}
+                variants={stagger} initial="hidden" animate="show"
+              >
+                {hero.eyebrow && (
+                  <motion.span variants={fadeUp} className="mb-4 block text-xs font-bold uppercase tracking-[0.28em] text-gold-2">
+                    {hero.eyebrow}
+                  </motion.span>
+                )}
+                <motion.h1 variants={fadeUp} className="font-display text-[clamp(2.4rem,7vw,5.2rem)] font-bold italic leading-[0.95]">
+                  {hero.headline} {hero.headlineAccent && <span className="text-gold-2">{hero.headlineAccent}</span>}
+                </motion.h1>
+                {hero.subtext && (
+                  <motion.p variants={fadeUp} className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-white/85">
+                    {hero.subtext}
+                  </motion.p>
+                )}
+              </motion.div>
+
+              <motion.div
+                className={`absolute z-[4] flex max-w-xl flex-col gap-6 text-white ${alignItems}`}
+                style={{ left: `${bPos.x}%`, top: `${bPos.y}%`, right: '4%' }}
+                variants={stagger} initial="hidden" animate="show"
+              >
+                {Array.isArray(hero.buttons) && hero.buttons.length > 0 && (
+                  <div className={`flex flex-wrap items-center gap-5 ${justify}`}>
+                    {hero.buttons.map((btn, i) => {
+                      const isInternal = !/^https?:\/\//.test(btn.link || '');
+                      const className = heroButtonClass(btn);
+                      const style = heroButtonStyle(btn);
+                      const showIcon = btn.showIcon !== false && btn.style !== 'link';
+                      return isInternal ? (
+                        <Link key={i} className={className} style={style} to={btn.link || '/products'}>
+                          {showIcon && <ShoppingBag size={16} />} {btn.label}
+                        </Link>
+                      ) : (
+                        <a key={i} className={className} style={style} href={btn.link} target="_blank" rel="noreferrer">
+                          {showIcon && <ShoppingBag size={16} />} {btn.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className={`flex gap-6 ${justify}`}>
+                  {[['100%', 'Pure Silk'], ['Handpicked', 'Curated Weaves'], ['Secure', 'Payments']].map(([b, s]) => (
+                    <span key={s} className="border-l border-white/25 pl-3.5">
+                      <b className="block text-[0.72rem] font-bold uppercase tracking-wide">{b}</b>
+                      <small className="text-[0.68rem] text-white/70">{s}</small>
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
 
         {shownCategories.length > 0 && (
           <div className="absolute inset-x-0 bottom-0 z-[5] hidden grid-cols-4 border-t border-white/10 bg-black/45 backdrop-blur sm:grid">
