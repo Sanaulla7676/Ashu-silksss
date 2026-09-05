@@ -341,7 +341,7 @@ export default function Home() {
             {OCCASIONS.map((o, i) => (
               <motion.div key={o.title} variants={fadeUp}>
                 <Link
-                  to={`/products/${encodeURIComponent(shownCategories[i] || '')}`}
+                  to={shownCategories[i] ? `/products/${encodeURIComponent(shownCategories[i])}` : '/products'}
                   className="group relative block aspect-[1.05] overflow-hidden rounded-[12px]"
                 >
                   <div className="h-full w-full transition-transform duration-500 group-hover:scale-[1.04]">
