@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles } from 'lucide-react';
+import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles, FolderTree } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
+import { PRODUCT_CATEGORY_MAP } from '../data/product-categories';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
@@ -118,6 +119,28 @@ export default function Admin() {
 
   const clear = () => { setEditing(null); setForm(empty); setPreview(''); };
 
+  // Products whose category still doesn't match the reviewed mapping.
+  const pendingCategoryFixes = PRODUCT_CATEGORY_MAP.filter(entry => {
+    const product = products.find(p => p.id === entry.id);
+    return product && product.category !== entry.category;
+  });
+
+  const applyCategories = async () => {
+    if (!pendingCategoryFixes.length) return;
+    setBusy(true); setError('');
+    let done = 0;
+    try {
+      for (const entry of pendingCategoryFixes) {
+        await updateCatalogProduct(entry.id, { category: entry.category });
+        done += 1;
+      }
+      toast.success(`${done} product${done === 1 ? '' : 's'} categorised`);
+      await load();
+    } catch (e) {
+      setError(`Stopped after ${done} update(s): ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
   const stockValue = p => stockDrafts[p.id] ?? String(p.stock ?? 0);
   const setStockDraft = (id, v) => setStockDrafts(d => ({ ...d, [id]: v }));
   const saveStock = async p => {
@@ -142,6 +165,22 @@ export default function Admin() {
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
+
+      {pendingCategoryFixes.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 text-sm text-indigo-900">
+            <FolderTree size={18} className="mt-0.5 shrink-0" />
+            <p>
+              <b>{pendingCategoryFixes.length} product{pendingCategoryFixes.length === 1 ? '' : 's'}</b> can be sorted into
+              Kanjeevaram Silk, Bridal, Designer and Cotton based on what each saree's photos actually show. Everything
+              else is left untouched.
+            </p>
+          </div>
+          <button className="dash-btn-primary shrink-0" onClick={applyCategories} disabled={busy}>
+            <FolderTree size={16} /> {busy ? 'Sorting...' : 'Sort into categories'}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.15fr)]">
         <form className="dash-card grid gap-5 p-5" onSubmit={save}>
