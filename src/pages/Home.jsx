@@ -120,8 +120,39 @@ function PremiumProductCard({ product, onQuickView }) {
   );
 }
 
+const CATEGORY_ORDER = ['Kanjeevaram Silk', 'Bridal', 'Designer', 'Cotton', 'Tissue Silk'];
+
+function CategoryRow({ title, tag, products, onQuickView }) {
+  if (!products.length) return null;
+  return (
+    <section className="py-10 md:py-14">
+      <div className="container">
+        <div className="mb-5 flex items-end justify-between gap-4 md:mb-6">
+          <div>
+            {tag && <span className="eyebrow">{tag}</span>}
+            <h2 className="heading-xl">{title}</h2>
+          </div>
+          <Link to={`/products/${encodeURIComponent(title)}`} className="shrink-0 whitespace-nowrap border-b border-ink pb-1 text-xs font-bold uppercase tracking-wide">
+            View all →
+          </Link>
+        </div>
+        <motion.div
+          className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4"
+          variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
+        >
+          {products.map(p => (
+            <div key={p.id} className="w-[46vw] shrink-0 snap-start sm:w-auto">
+              <PremiumProductCard product={p} onQuickView={onQuickView} />
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
-  const { featuredProducts, categories, allProducts } = useProducts();
+  const { featuredProducts, categories, allProducts, byCategory } = useProducts();
   const { hero } = useHero();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -133,6 +164,10 @@ export default function Home() {
   const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
   const categoryImage = cat => mediaUrl(allProducts.find(p => p.category === cat) || {});
   const editorialProduct = featuredProducts[0];
+  const orderedCategories = [
+    ...CATEGORY_ORDER.filter(c => byCategory[c]?.length),
+    ...Object.keys(byCategory).filter(c => !CATEGORY_ORDER.includes(c)),
+  ];
 
   const subscribe = async e => {
     e.preventDefault();
@@ -330,6 +365,17 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* SHOP BY CATEGORY — SEGREGATED ROWS */}
+      {orderedCategories.map(cat => (
+        <CategoryRow
+          key={cat}
+          title={cat}
+          tag="Shop the collection"
+          products={byCategory[cat].slice(0, 8)}
+          onQuickView={setQuickViewProduct}
+        />
+      ))}
 
       {/* CONFIDENCE */}
       <section className="bg-gradient-to-br from-paper to-white py-16 md:py-24">

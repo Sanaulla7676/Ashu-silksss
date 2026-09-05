@@ -136,3 +136,11 @@
     @apply rounded-xl border border-slate-200 bg-white;
   }
 }
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

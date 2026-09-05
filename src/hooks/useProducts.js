@@ -31,6 +31,18 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
   }, [catalog, category, search, sort]);
 
   const categories = useMemo(() => ['All', ...new Set(catalog.map(p => p.category).filter(Boolean))], [catalog]);
-  const featuredProducts = useMemo(() => catalog.filter(p => p.featured && Number(p.stock ?? 0) > 0).slice(0, 8), [catalog]);
-  return { products, categories, featuredProducts, allProducts: catalog, loading, error };
+  const inStock = useMemo(() => catalog.filter(p => Number(p.stock ?? 0) > 0), [catalog]);
+  const featuredProducts = useMemo(() => {
+    const marked = inStock.filter(p => p.featured);
+    return (marked.length ? marked : inStock).slice(0, 8);
+  }, [inStock]);
+  const byCategory = useMemo(() => {
+    const map = {};
+    inStock.forEach(p => {
+      const cat = p.category || 'Other';
+      (map[cat] ||= []).push(p);
+    });
+    return map;
+  }, [inStock]);
+  return { products, categories, featuredProducts, byCategory, allProducts: catalog, loading, error };
 }
