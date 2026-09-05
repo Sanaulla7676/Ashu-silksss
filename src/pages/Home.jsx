@@ -236,7 +236,13 @@ export default function Home() {
   const artisanY = useTransform(artisanProgress, [0, 1], ['-8%', '8%']);
 
   const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
-  const featureList = featuredProducts.length ? featuredProducts : allProducts;
+  // The landing page shows the whole in-stock catalogue, featured ones first.
+  const featuredIds = new Set(featuredProducts.map(p => p.id));
+  const inStock = allProducts.filter(p => Number(p.stock ?? 0) > 0);
+  const featureList = [
+    ...inStock.filter(p => featuredIds.has(p.id)),
+    ...inStock.filter(p => !featuredIds.has(p.id)),
+  ];
   const artFor = i => mediaUrl(allProducts[i % Math.max(allProducts.length, 1)] || {});
 
   const subscribe = async e => {
