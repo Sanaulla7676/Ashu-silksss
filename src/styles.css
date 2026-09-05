@@ -144,3 +144,11 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Tailwind v4 ships its own `container` utility, which outranks the
+   components-layer rule above and leaves every page full-bleed on mobile.
+   Unlayered CSS beats all @layer rules, so this restores the site gutters. */
+.container {
+  width: min(1240px, calc(100% - 32px));
+  margin-inline: auto;
+}
