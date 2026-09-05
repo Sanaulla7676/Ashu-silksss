@@ -138,7 +138,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, ease: EASE, delay: 0.15 }}
-            className="as-shine absolute left-3 top-3 z-[3] rounded-[4px] bg-paper/95 px-2.5 py-[6px] text-[8.5px] font-semibold uppercase tracking-[0.16em] text-ink shadow-sm backdrop-blur"
+            className="as-shine absolute left-2 top-2 z-[3] rounded-[4px] bg-paper/95 px-2 py-[5px] text-[7.5px] font-semibold uppercase tracking-[0.14em] text-ink shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:py-[6px] sm:text-[8.5px] sm:tracking-[0.16em]"
           >
             {badge}
           </motion.span>
@@ -163,7 +163,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
             toast(wished ? 'Removed from wishlist' : 'Saved to wishlist', { icon: wished ? '💔' : '❤️' });
           }}
           aria-label={wished ? 'Remove from wishlist' : 'Save to wishlist'}
-          className={`absolute right-3 top-3 z-[3] grid h-[34px] w-[34px] place-items-center rounded-full shadow-sm backdrop-blur transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+          className={`absolute right-2 top-2 z-[3] grid h-[29px] w-[29px] place-items-center rounded-full shadow-sm backdrop-blur transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:right-3 sm:top-3 sm:h-[34px] sm:w-[34px] ${
             wished ? 'bg-wine text-white' : 'bg-paper/95 text-ink hover:bg-white'
           }`}
         >
@@ -171,7 +171,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
         </motion.button>
 
         {/* Editorial line */}
-        <div className="pointer-events-none absolute left-4 top-[52px] z-[2] select-none transition-opacity duration-500 group-hover:opacity-0">
+        <div className="pointer-events-none absolute left-2.5 top-[42px] z-[2] select-none transition-opacity duration-500 group-hover:opacity-0 sm:left-4 sm:top-[52px]">
           {tagline.map((line, i) => (
             <motion.span
               key={line}
@@ -179,7 +179,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.6, ease: EASE, delay: 0.25 + i * 0.09 }}
-              className="block text-[10.5px] uppercase leading-[1.55] tracking-[0.15em] text-white/92 drop-shadow-[0_1px_6px_rgba(0,0,0,.5)]"
+              className="block text-[8.5px] uppercase leading-[1.5] tracking-[0.12em] text-white/92 drop-shadow-[0_1px_6px_rgba(0,0,0,.5)] sm:text-[10.5px] sm:leading-[1.55] sm:tracking-[0.15em]"
             >
               {line}
             </motion.span>
@@ -190,7 +190,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
         {onQuickView && (
           <button
             onClick={() => onQuickView(product)}
-            className="absolute inset-x-3 bottom-3 z-[3] flex translate-y-[130%] items-center justify-center gap-2 rounded-[6px] bg-paper/95 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink opacity-0 shadow-lg backdrop-blur transition-all duration-[450ms] ease-out group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100"
+            className="absolute inset-x-2 bottom-2 z-[3] flex translate-y-[130%] items-center justify-center gap-1.5 rounded-[6px] bg-paper/95 py-2 text-[8.5px] font-semibold uppercase tracking-[0.12em] text-ink opacity-0 shadow-lg backdrop-blur transition-all duration-[450ms] ease-out group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 sm:inset-x-3 sm:bottom-3 sm:gap-2 sm:py-2.5 sm:text-[10px] sm:tracking-[0.16em]"
           >
             <Eye size={13} /> Quick view
           </button>
@@ -204,17 +204,17 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
       </div>
 
       {/* DETAILS */}
-      <div className="flex flex-1 flex-col px-4 pb-4 pt-[15px]">
+      <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2.5 sm:px-4 sm:pb-4 sm:pt-[15px]">
         <Link
           to={`/product/${product.id}`}
-          className="font-display text-[19px] leading-tight text-ink transition-colors duration-300 group-hover:text-wine"
+          className="font-display text-[15px] leading-tight text-ink transition-colors duration-300 group-hover:text-wine sm:text-[19px]"
         >
           {product.name}
         </Link>
-        <p className="mt-[3px] text-[11.5px] text-muted">{subtitleFor(product)}</p>
+        <p className="mt-[3px] text-[10px] leading-snug text-muted sm:text-[11.5px]">{subtitleFor(product)}</p>
 
         {swatches.length > 0 && (
-          <div className="mt-3 flex items-center gap-1.5" title="Colours in this saree">
+          <div className="mt-2 flex items-center gap-1 sm:mt-3 sm:gap-1.5" title="Colours in this saree">
             {swatches.map((c, i) => (
               <motion.span
                 key={`${c}-${i}`}
@@ -222,42 +222,47 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ type: 'spring', stiffness: 340, damping: 18, delay: 0.15 + i * 0.07 }}
-                className="h-[17px] w-[17px] rounded-full ring-1 ring-ink/10 transition-transform duration-300 hover:scale-125"
+                className="h-[13px] w-[13px] rounded-full ring-1 ring-ink/10 transition-transform duration-300 hover:scale-125 sm:h-[17px] sm:w-[17px]"
                 style={{ background: c }}
               />
             ))}
-            {extraSwatches > 0 && <span className="ml-0.5 text-[10.5px] text-muted">+{extraSwatches}</span>}
+            {extraSwatches > 0 && <span className="ml-0.5 text-[9.5px] text-muted sm:text-[10.5px]">+{extraSwatches}</span>}
           </div>
         )}
 
         {product.description && (
-          <p className="mt-2.5 line-clamp-2 text-[11.5px] leading-[1.65] text-muted">{product.description}</p>
+          <p className="mt-2 line-clamp-2 text-[10px] leading-[1.6] text-muted sm:mt-2.5 sm:text-[11.5px] sm:leading-[1.65]">
+            {product.description}
+          </p>
         )}
 
-        <div className="mt-3.5 flex items-end justify-between gap-3">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-[21px] text-ink">{money(product.price)}</span>
-            {discount > 0 && <s className="text-[11px] text-muted">{money(product.mrp)}</s>}
+        <div className="mt-auto pt-2.5 sm:pt-3.5">
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-wrap items-baseline gap-x-1.5">
+              <span className="font-display text-[17px] text-ink sm:text-[21px]">{money(product.price)}</span>
+              {discount > 0 && <s className="text-[10px] text-muted sm:text-[11px]">{money(product.mrp)}</s>}
+            </div>
+            {/* The whole card already links through, so this is desktop-only. */}
+            <Link
+              to={`/product/${product.id}`}
+              className="group/link hidden shrink-0 items-center gap-1.5 text-[11.5px] text-muted transition-colors hover:text-wine sm:inline-flex"
+            >
+              View Details
+              <ArrowRight size={12} className="transition-transform duration-300 group-hover/link:translate-x-1" />
+            </Link>
           </div>
-          <Link
-            to={`/product/${product.id}`}
-            className="group/link inline-flex shrink-0 items-center gap-1.5 text-[11.5px] text-muted transition-colors hover:text-wine"
-          >
-            View Details
-            <ArrowRight size={12} className="transition-transform duration-300 group-hover/link:translate-x-1" />
-          </Link>
-        </div>
 
-        <button
-          onClick={handleAdd}
-          className="relative mt-3.5 flex w-full items-center justify-center gap-2 overflow-hidden rounded-[6px] bg-ivory py-[11px] text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-        >
-          <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
-          <span className="relative z-[1] flex items-center gap-2">
-            {added ? <Check size={13} /> : <ShoppingBag size={13} />}
-            {added ? 'Added' : 'Add to Bag'}
-          </span>
-        </button>
+          <button
+            onClick={handleAdd}
+            className="relative mt-2.5 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[6px] bg-ivory py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:mt-3.5 sm:gap-2 sm:py-[11px] sm:text-[10.5px] sm:tracking-[0.18em]"
+          >
+            <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
+            <span className="relative z-[1] flex items-center gap-1.5 sm:gap-2">
+              {added ? <Check size={12} /> : <ShoppingBag size={12} />}
+              {added ? 'Added' : 'Add to Bag'}
+            </span>
+          </button>
+        </div>
       </div>
     </motion.article>
   );

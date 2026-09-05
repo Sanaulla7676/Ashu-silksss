@@ -456,7 +456,7 @@ export default function Home() {
               )}
 
               {loading ? (
-                <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
                   {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                 </div>
               ) : (
@@ -464,7 +464,7 @@ export default function Home() {
                   // Re-keying on the filter replays the stagger, so switching
                   // categories reads as the grid rebuilding itself.
                   key={activeFilter}
-                  className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
+                  className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
                   variants={staggerFast}
                   initial="hidden"
                   animate="show"
