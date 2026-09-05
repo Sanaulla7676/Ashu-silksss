@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, ChevronDown } from 'lucide-react';
-import { AnimatePresence, animate, motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
+import { animate, motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from '../components/ProductMedia';
 import LuxuryProductCard, { ProductCardSkeleton } from '../components/LuxuryProductCard';
@@ -461,24 +461,17 @@ export default function Home() {
                 </div>
               ) : (
                 <motion.div
-                  layout
+                  // Re-keying on the filter replays the stagger, so switching
+                  // categories reads as the grid rebuilding itself.
+                  key={activeFilter}
                   className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
-                  variants={staggerFast} {...inView}
+                  variants={staggerFast}
+                  initial="hidden"
+                  animate="show"
                 >
-                  <AnimatePresence mode="popLayout">
-                    {featureList.map((p, i) => (
-                      <motion.div
-                        key={p.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.94 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.94 }}
-                        transition={{ duration: 0.35, ease: EASE }}
-                      >
-                        <LuxuryProductCard product={p} badge={badgeFor(p, i)} onQuickView={setQuickView} />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                  {featureList.map((p, i) => (
+                    <LuxuryProductCard key={p.id} product={p} badge={badgeFor(p, i)} onQuickView={setQuickView} />
+                  ))}
                 </motion.div>
               )}
 
