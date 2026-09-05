@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, ChevronDown } from 'lucide-react';
+import { MessageCircle, ChevronDown } from 'lucide-react';
 import { animate, motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from '../components/ProductMedia';
+import LuxuryProductCard from '../components/LuxuryProductCard';
 import { useProducts } from '../hooks/useProducts';
 import { useHero } from '../context/HeroContext';
-import { useWishlist } from '../hooks/useWishlist';
 import { createEnquiry } from '../services/firestore';
-import { money, mediaUrl } from '../utils';
+import { mediaUrl, discountPercent } from '../utils';
 import { storeInfo } from '../data';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -75,6 +75,17 @@ const OCCASIONS = [
   { title: 'Gifting Collection', text: 'A Gift of Tradition →' },
 ];
 
+/** Badge text comes from real signals on the product, not decoration. */
+function badgeFor(product, index) {
+  if (discountPercent(product.price, product.mrp) > 0) return 'Sale';
+  if (product.featured) return 'Bestseller';
+  if (product.category === 'Bridal') return 'Wedding Edit';
+  if (product.category === 'Cotton') return 'Classic';
+  if (product.category === 'Designer') return 'Trending';
+  if (index < 4) return 'New';
+  return 'Festive';
+}
+
 // Warm panel tints derived from the live theme so the admin colour editor
 // still drives this page instead of it being hardcoded beige.
 const PANEL = 'color-mix(in srgb, var(--color-gold-2) 20%, var(--color-ivory))';
@@ -137,74 +148,6 @@ function SectionHeading({ kicker, title, action }) {
       </div>
       {action}
     </motion.div>
-  );
-}
-
-function ProductCard({ product, badge }) {
-  const { addToWishlist, isInWishlist } = useWishlist();
-  const wished = isInWishlist(product.id);
-  const [popping, setPopping] = useState(false);
-
-  return (
-    <motion.article variants={reveal} className="group relative">
-      <div className="as-lift relative aspect-[0.82] overflow-hidden rounded-[11px] bg-ivory">
-        <Link to={`/product/${product.id}`}>
-          <motion.div
-            variants={unmask}
-            className="h-full w-full transition-transform duration-[650ms] ease-out group-hover:scale-[1.07]"
-          >
-            <ProductMedia url={mediaUrl(product)} />
-          </motion.div>
-          <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.28] to-transparent to-[45%] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-ink/85 py-2.5 text-center text-[10px] uppercase tracking-[0.18em] text-ivory transition-transform duration-300 ease-out group-hover:translate-y-0">
-            View details
-          </span>
-        </Link>
-
-        <motion.button
-          animate={popping ? { scale: [1, 1.35, 0.92, 1] } : { scale: 1 }}
-          transition={{ duration: 0.42, ease: EASE }}
-          className={`absolute right-3 top-3 z-[2] grid h-[35px] w-[35px] place-items-center rounded-full border border-ink/[0.12] transition-colors ${
-            wished ? 'bg-ink text-white' : 'bg-paper/[0.92] text-ink hover:bg-paper'
-          }`}
-          onClick={() => {
-            setPopping(true);
-            setTimeout(() => setPopping(false), 450);
-            addToWishlist(product.id);
-            toast(wished ? 'Removed from wishlist' : 'Saved to wishlist', { icon: wished ? '💔' : '❤️' });
-          }}
-          aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
-        >
-          <Heart size={15} fill={wished ? 'currentColor' : 'none'} />
-        </motion.button>
-
-        {badge && (
-          <motion.span
-            variants={pop}
-            className="as-shine absolute bottom-3 left-3 z-[2] rounded-[3px] px-[9px] py-[7px] text-[9px] uppercase tracking-[0.14em] text-ink"
-            style={{ background: PANEL_STRONG }}
-          >
-            {badge}
-          </motion.span>
-        )}
-      </div>
-
-      <div className="px-[3px] pt-[13px]">
-        <Link
-          to={`/product/${product.id}`}
-          className="block text-[13px] leading-snug text-ink transition-colors duration-300 group-hover:text-gold"
-        >
-          {product.name}
-        </Link>
-        <div className="mt-[3px] font-display text-[20px] text-ink">{money(product.price)}</div>
-        {product.description && (
-          <p className="mt-[6px] line-clamp-2 text-[11px] leading-[1.6] text-muted">{product.description}</p>
-        )}
-        <div className="mt-[6px] text-[10px] text-muted">
-          {[product.fabric, product.pattern].filter(Boolean).join(' · ') || 'Pure silk · Handwoven'}
-        </div>
-      </div>
-    </motion.article>
   );
 }
 
@@ -472,11 +415,11 @@ export default function Home() {
                 }
               />
               <motion.div
-                className="grid grid-cols-2 gap-x-3 gap-y-[22px] md:grid-cols-4 md:gap-[18px]"
+                className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
                 variants={staggerFast} {...inView}
               >
                 {featureList.map((p, i) => (
-                  <ProductCard key={p.id} product={p} badge={i < 4 ? 'New' : i % 5 === 0 ? 'Bestseller' : null} />
+                  <LuxuryProductCard key={p.id} product={p} badge={badgeFor(p, i)} />
                 ))}
               </motion.div>
             </div>
