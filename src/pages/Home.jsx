@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, ChevronDown } from 'lucide-react';
-import { animate, motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
+import { AnimatePresence, animate, motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from '../components/ProductMedia';
-import LuxuryProductCard from '../components/LuxuryProductCard';
+import LuxuryProductCard, { ProductCardSkeleton } from '../components/LuxuryProductCard';
+import QuickViewModal from '../components/QuickViewModal';
 import { useProducts } from '../hooks/useProducts';
 import { useHero } from '../context/HeroContext';
 import { createEnquiry } from '../services/firestore';
@@ -152,10 +153,12 @@ function SectionHeading({ kicker, title, action }) {
 }
 
 export default function Home() {
-  const { featuredProducts, categories, allProducts, byCategory } = useProducts();
+  const { featuredProducts, categories, allProducts, byCategory, loading } = useProducts();
   const { hero } = useHero();
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [quickView, setQuickView] = useState(null);
 
   // Thin progress bar tracking how far down the page you are.
   const { scrollYProgress: pageProgress } = useScroll();
@@ -182,10 +185,14 @@ export default function Home() {
   // The landing page shows the whole in-stock catalogue, featured ones first.
   const featuredIds = new Set(featuredProducts.map(p => p.id));
   const inStock = allProducts.filter(p => Number(p.stock ?? 0) > 0);
-  const featureList = [
+  const orderedProducts = [
     ...inStock.filter(p => featuredIds.has(p.id)),
     ...inStock.filter(p => !featuredIds.has(p.id)),
   ];
+  const featureList = activeFilter === 'All'
+    ? orderedProducts
+    : orderedProducts.filter(p => p.category === activeFilter);
+  const filterChips = ['All', ...shownCategories];
   const artFor = i => mediaUrl(allProducts[i % Math.max(allProducts.length, 1)] || {});
 
   const subscribe = async e => {
@@ -399,7 +406,7 @@ export default function Home() {
         </section>
 
         {/* ALL PRODUCTS */}
-        {featureList.length > 0 && (
+        {(loading || orderedProducts.length > 0) && (
           <section className="pb-[68px] pt-5 lg:pb-[92px]">
             <div className="container">
               <SectionHeading
@@ -414,14 +421,72 @@ export default function Home() {
                   </Link>
                 }
               />
-              <motion.div
-                className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
-                variants={staggerFast} {...inView}
-              >
-                {featureList.map((p, i) => (
-                  <LuxuryProductCard key={p.id} product={p} badge={badgeFor(p, i)} />
-                ))}
-              </motion.div>
+
+              {/* Filter the grid without leaving the page */}
+              {!loading && filterChips.length > 2 && (
+                <motion.div variants={reveal} {...inView} className="scrollbar-hide -mx-4 mb-7 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+                  {filterChips.map(chip => {
+                    const count = chip === 'All'
+                      ? orderedProducts.length
+                      : orderedProducts.filter(p => p.category === chip).length;
+                    const isActive = activeFilter === chip;
+                    return (
+                      <button
+                        key={chip}
+                        onClick={() => setActiveFilter(chip)}
+                        aria-pressed={isActive}
+                        className={`relative shrink-0 rounded-full px-4 py-2 text-[11px] font-medium tracking-[0.06em] transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+                          isActive ? 'text-white' : 'text-muted hover:text-ink'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="filter-pill"
+                            className="absolute inset-0 rounded-full bg-wine"
+                            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative z-[1]">
+                          {chip} <span className={isActive ? 'text-white/60' : 'text-muted/60'}>{count}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+
+              {loading ? (
+                <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                </div>
+              ) : (
+                <motion.div
+                  layout
+                  className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
+                  variants={staggerFast} {...inView}
+                >
+                  <AnimatePresence mode="popLayout">
+                    {featureList.map((p, i) => (
+                      <motion.div
+                        key={p.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.94 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.94 }}
+                        transition={{ duration: 0.35, ease: EASE }}
+                      >
+                        <LuxuryProductCard product={p} badge={badgeFor(p, i)} onQuickView={setQuickView} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+
+              {!loading && featureList.length === 0 && (
+                <p className="rounded-[12px] border border-dashed border-ink/15 bg-paper py-12 text-center text-[13px] text-muted">
+                  Nothing in {activeFilter} just yet.
+                </p>
+              )}
             </div>
           </section>
         )}
@@ -538,6 +603,8 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+
+      <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />
 
       <motion.a
         href={`https://wa.me/${storeInfo.whatsapp}`}

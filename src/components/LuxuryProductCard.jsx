@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, ArrowRight, Check } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowRight, Check, Eye } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
@@ -26,9 +26,7 @@ const TAGLINES = {
   default: ['Woven', 'with', 'intent'],
 };
 
-function taglineFor(product) {
-  return TAGLINES[product.category] || TAGLINES.default;
-}
+const taglineFor = product => TAGLINES[product.category] || TAGLINES.default;
 
 function subtitleFor(product) {
   const parts = [product.fabric, product.workType || product.pattern].filter(Boolean);
@@ -37,11 +35,35 @@ function subtitleFor(product) {
   return 'Pure silk · Handwoven';
 }
 
-export default function LuxuryProductCard({ product, badge }) {
+/** Fades a photo in once it has actually decoded, so nothing pops. */
+function FadeImage({ url, className = '' }) {
+  const [loaded, setLoaded] = useState(false);
+  const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url || '') || (url || '').includes('/video/upload/');
+
+  if (!url || isVideo) return <ProductMedia url={url} className={className} />;
+
+  return (
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setLoaded(true)}
+      className={`h-full w-full object-cover transition-[opacity,filter] duration-700 ease-out ${
+        loaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'
+      } ${className}`}
+    />
+  );
+}
+
+export default function LuxuryProductCard({ product, badge, onQuickView }) {
   const { addToCart } = useCart();
   const { addToWishlist, isInWishlist } = useWishlist();
   const wished = isInWishlist(product.id);
+
+  const gallery = Array.isArray(product.media) ? product.media.filter(Boolean) : [];
   const image = mediaUrl(product);
+  const altImage = gallery[1] || '';
   const palette = useImagePalette(image);
   const discount = discountPercent(product.price, product.mrp);
 
@@ -52,8 +74,8 @@ export default function LuxuryProductCard({ product, badge }) {
   const frameRef = useRef(null);
   const px = useMotionValue(0.5);
   const py = useMotionValue(0.5);
-  const rotateX = useSpring(useTransform(py, [0, 1], [6, -6]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(px, [0, 1], [-7, 7]), { stiffness: 200, damping: 20 });
+  const rotateX = useSpring(useTransform(py, [0, 1], [5, -5]), { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(useTransform(px, [0, 1], [-6, 6]), { stiffness: 200, damping: 20 });
 
   const onPointerMove = e => {
     const rect = frameRef.current?.getBoundingClientRect();
@@ -77,7 +99,7 @@ export default function LuxuryProductCard({ product, badge }) {
   return (
     <motion.article
       variants={cardReveal}
-      className="group relative flex flex-col overflow-hidden rounded-[14px] border border-ink/[0.07] bg-paper shadow-[0_2px_14px_-6px_rgba(37,25,15,.16)] transition-all duration-[550ms] ease-out hover:-translate-y-1.5 hover:shadow-[0_28px_54px_-24px_rgba(37,25,15,.45)]"
+      className="group relative flex flex-col overflow-hidden rounded-[14px] border border-ink/[0.07] bg-paper shadow-[0_2px_14px_-6px_rgba(37,25,15,.16)] transition-all duration-[550ms] ease-out hover:-translate-y-1.5 hover:border-gold/30 hover:shadow-[0_28px_54px_-24px_rgba(37,25,15,.45)]"
       style={{ perspective: 1000 }}
     >
       {/* PHOTO */}
@@ -88,18 +110,24 @@ export default function LuxuryProductCard({ product, badge }) {
         className="relative aspect-[1.06] overflow-hidden bg-ivory"
       >
         <Link to={`/product/${product.id}`} className="block h-full w-full">
-          <motion.div
-            style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-            className="h-full w-full"
-          >
-            <div className="h-full w-full scale-[1.04] transition-transform duration-[900ms] ease-out group-hover:scale-[1.13]">
-              <ProductMedia url={image} />
+          <motion.div style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }} className="h-full w-full">
+            {/* Primary photo */}
+            <div
+              className={`h-full w-full scale-[1.04] transition-all duration-[900ms] ease-out group-hover:scale-[1.13] ${
+                altImage ? 'group-hover:opacity-0' : ''
+              }`}
+            >
+              <FadeImage url={image} />
             </div>
+            {/* Second photo of the same saree, revealed on hover */}
+            {altImage && (
+              <div className="absolute inset-0 scale-[1.13] opacity-0 transition-all duration-[900ms] ease-out group-hover:scale-[1.04] group-hover:opacity-100">
+                <FadeImage url={altImage} />
+              </div>
+            )}
           </motion.div>
 
-          {/* Legibility wash behind the overlay copy */}
           <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(105deg,rgba(28,20,14,.46)_0%,rgba(28,20,14,.12)_46%,transparent_72%)]" />
-          {/* Warm sweep on hover */}
           <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(28,20,14,.34),transparent_58%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
         </Link>
 
@@ -116,6 +144,13 @@ export default function LuxuryProductCard({ product, badge }) {
           </motion.span>
         )}
 
+        {/* Photo count, so people know there is more to see */}
+        {gallery.length > 1 && (
+          <span className="absolute bottom-3 right-3 z-[3] rounded-full bg-ink/55 px-2 py-[3px] text-[9px] font-medium text-white/90 backdrop-blur transition-opacity duration-300 group-hover:opacity-0">
+            1/{gallery.length}
+          </span>
+        )}
+
         {/* Wishlist */}
         <motion.button
           animate={heartPop ? { scale: [1, 1.4, 0.9, 1] } : { scale: 1 }}
@@ -128,15 +163,15 @@ export default function LuxuryProductCard({ product, badge }) {
             toast(wished ? 'Removed from wishlist' : 'Saved to wishlist', { icon: wished ? '💔' : '❤️' });
           }}
           aria-label={wished ? 'Remove from wishlist' : 'Save to wishlist'}
-          className={`absolute right-3 top-3 z-[3] grid h-[34px] w-[34px] place-items-center rounded-full shadow-sm backdrop-blur transition-colors duration-300 ${
+          className={`absolute right-3 top-3 z-[3] grid h-[34px] w-[34px] place-items-center rounded-full shadow-sm backdrop-blur transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
             wished ? 'bg-wine text-white' : 'bg-paper/95 text-ink hover:bg-white'
           }`}
         >
           <Heart size={14.5} fill={wished ? 'currentColor' : 'none'} />
         </motion.button>
 
-        {/* Editorial line over the photo */}
-        <div className="pointer-events-none absolute left-4 top-[52px] z-[2] select-none">
+        {/* Editorial line */}
+        <div className="pointer-events-none absolute left-4 top-[52px] z-[2] select-none transition-opacity duration-500 group-hover:opacity-0">
           {tagline.map((line, i) => (
             <motion.span
               key={line}
@@ -151,8 +186,18 @@ export default function LuxuryProductCard({ product, badge }) {
           ))}
         </div>
 
+        {/* Quick view slides up on hover */}
+        {onQuickView && (
+          <button
+            onClick={() => onQuickView(product)}
+            className="absolute inset-x-3 bottom-3 z-[3] flex translate-y-[130%] items-center justify-center gap-2 rounded-[6px] bg-paper/95 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink opacity-0 shadow-lg backdrop-blur transition-all duration-[450ms] ease-out group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100"
+          >
+            <Eye size={13} /> Quick view
+          </button>
+        )}
+
         {discount > 0 && (
-          <span className="absolute bottom-3 left-3 z-[3] rounded-[4px] bg-wine px-2.5 py-[5px] text-[9px] font-bold uppercase tracking-[0.12em] text-white">
+          <span className="absolute bottom-3 left-3 z-[3] rounded-[4px] bg-wine px-2.5 py-[5px] text-[9px] font-bold uppercase tracking-[0.12em] text-white transition-opacity duration-300 group-hover:opacity-0">
             {discount}% off
           </span>
         )}
@@ -168,7 +213,6 @@ export default function LuxuryProductCard({ product, badge }) {
         </Link>
         <p className="mt-[3px] text-[11.5px] text-muted">{subtitleFor(product)}</p>
 
-        {/* Colours actually present in the photograph */}
         {swatches.length > 0 && (
           <div className="mt-3 flex items-center gap-1.5" title="Colours in this saree">
             {swatches.map((c, i) => (
@@ -182,9 +226,7 @@ export default function LuxuryProductCard({ product, badge }) {
                 style={{ background: c }}
               />
             ))}
-            {extraSwatches > 0 && (
-              <span className="ml-0.5 text-[10.5px] text-muted">+{extraSwatches}</span>
-            )}
+            {extraSwatches > 0 && <span className="ml-0.5 text-[10.5px] text-muted">+{extraSwatches}</span>}
           </div>
         )}
 
@@ -208,9 +250,8 @@ export default function LuxuryProductCard({ product, badge }) {
 
         <button
           onClick={handleAdd}
-          className="relative mt-3.5 flex w-full items-center justify-center gap-2 overflow-hidden rounded-[6px] bg-ivory py-[11px] text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink transition-colors duration-500 hover:text-white"
+          className="relative mt-3.5 flex w-full items-center justify-center gap-2 overflow-hidden rounded-[6px] bg-ivory py-[11px] text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
-          {/* Fill sweeps in from the left on hover */}
           <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
           <span className="relative z-[1] flex items-center gap-2">
             {added ? <Check size={13} /> : <ShoppingBag size={13} />}
@@ -219,5 +260,25 @@ export default function LuxuryProductCard({ product, badge }) {
         </button>
       </div>
     </motion.article>
+  );
+}
+
+/** Placeholder shown while the catalogue is still loading. */
+export function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[14px] border border-ink/[0.07] bg-paper">
+      <div className="skeleton aspect-[1.06] w-full" />
+      <div className="flex flex-col gap-2.5 px-4 pb-4 pt-4">
+        <div className="skeleton h-4 w-3/4 rounded" />
+        <div className="skeleton h-3 w-1/2 rounded" />
+        <div className="mt-1 flex gap-1.5">
+          {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-[17px] w-[17px] rounded-full" />)}
+        </div>
+        <div className="skeleton mt-1 h-3 w-full rounded" />
+        <div className="skeleton h-3 w-5/6 rounded" />
+        <div className="skeleton mt-1.5 h-5 w-24 rounded" />
+        <div className="skeleton mt-1.5 h-9 w-full rounded-[6px]" />
+      </div>
+    </div>
   );
 }
