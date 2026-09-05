@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from '../components/ProductMedia';
 import { useProducts } from '../hooks/useProducts';
@@ -16,6 +16,24 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
+
+// Story reveal: the block rises and un-blurs as it enters the viewport.
+const reveal = {
+  hidden: { opacity: 0, y: 46, filter: 'blur(6px)' },
+  show: {
+    opacity: 1, y: 0, filter: 'blur(0px)',
+    transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+// Images unmask upward from behind their own frame.
+const unmask = {
+  hidden: { clipPath: 'inset(14% 0% 0% 0%)', scale: 1.08 },
+  show: {
+    clipPath: 'inset(0% 0% 0% 0%)', scale: 1,
+    transition: { duration: 1.05, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+const inView = { initial: 'hidden', whileInView: 'show', viewport: { once: true, margin: '-70px' } };
 
 const services = [
   { sym: '✦', title: '100% Pure Silk', text: 'Authentic & Certified' },
@@ -50,12 +68,15 @@ function ProductCard({ product, badge }) {
   const wished = isInWishlist(product.id);
 
   return (
-    <motion.article variants={fadeUp} className="group relative">
+    <motion.article variants={reveal} className="group relative">
       <div className="relative aspect-[0.82] overflow-hidden rounded-[11px] bg-ivory">
         <Link to={`/product/${product.id}`}>
-          <div className="h-full w-full transition-transform duration-[550ms] ease-out group-hover:scale-[1.045]">
+          <motion.div
+            variants={unmask}
+            className="h-full w-full transition-transform duration-[550ms] ease-out group-hover:scale-[1.045]"
+          >
             <ProductMedia url={mediaUrl(product)} />
-          </div>
+          </motion.div>
           <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.16] to-transparent to-[35%] opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
         </Link>
         <button
@@ -80,11 +101,17 @@ function ProductCard({ product, badge }) {
         )}
       </div>
       <div className="px-[3px] pt-[13px]">
-        <Link to={`/product/${product.id}`} className="block text-[13px] leading-snug text-ink">
+        <Link
+          to={`/product/${product.id}`}
+          className="block text-[13px] leading-snug text-ink transition-colors group-hover:text-gold"
+        >
           {product.name}
         </Link>
         <div className="mt-[3px] font-display text-[20px] text-ink">{money(product.price)}</div>
-        <div className="mt-[2px] text-[10px] text-muted">
+        {product.description && (
+          <p className="mt-[6px] line-clamp-2 text-[11px] leading-[1.6] text-muted">{product.description}</p>
+        )}
+        <div className="mt-[6px] text-[10px] text-muted">
           {[product.fabric, product.pattern].filter(Boolean).join(' · ') || 'Pure silk · Handwoven'}
         </div>
       </div>
@@ -97,6 +124,14 @@ export default function Home() {
   const { hero } = useHero();
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
+
+  // The hero stays pinned while the rest of the page rises over it.
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
+  const heroDim = useTransform(scrollYProgress, [0, 1], [0, 0.55]);
+  const heroTextY = useTransform(scrollYProgress, [0, 1], ['0%', '38%']);
+  const heroTextFade = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
   const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
   const newArrivals = (featuredProducts.length ? featuredProducts : allProducts).slice(0, 4);
@@ -123,10 +158,15 @@ export default function Home() {
         Complimentary Shipping Across India &nbsp;|&nbsp; 100% Pure Silk &nbsp;|&nbsp; Easy Returns
       </div>
 
-      {/* HERO */}
-      <section className="relative grid min-h-[620px] items-end overflow-hidden bg-wine-3 sm:min-h-[640px] lg:min-h-[680px]">
+      {/* HERO — pinned; the page scrolls over it */}
+      <section
+        ref={heroRef}
+        className="sticky top-0 z-0 grid min-h-[620px] items-end overflow-hidden bg-wine-3 sm:min-h-[640px] lg:min-h-[680px]"
+      >
         <div className="absolute inset-0">
-          <ProductMedia url={hero.url} />
+          <motion.div className="h-full w-full" style={{ scale: heroScale }}>
+            <ProductMedia url={hero.url} />
+          </motion.div>
           <div
             className="absolute inset-0"
             style={{
@@ -134,12 +174,14 @@ export default function Home() {
                 'linear-gradient(90deg, rgba(20,15,11,.78) 0%, rgba(20,15,11,.30) 50%, rgba(20,15,11,.15) 100%)',
             }}
           />
+          <motion.div className="absolute inset-0 bg-wine-3" style={{ opacity: heroDim }} />
         </div>
 
         <div className="container relative z-[2]">
           <motion.div
             className="max-w-[520px] pb-[76px] pt-[70px] text-white lg:pb-[78px] lg:pt-[90px]"
             variants={stagger} initial="hidden" animate="show"
+            style={{ y: heroTextY, opacity: heroTextFade }}
           >
             <motion.div variants={fadeUp} className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold-2">
               {hero.eyebrow || 'Pure Heritage · Modern Grace'}
@@ -177,8 +219,10 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Everything below rides over the pinned hero as one sheet. */}
+      <div className="relative z-10 -mt-8 rounded-t-[28px] bg-ivory shadow-[0_-30px_60px_-20px_rgba(20,15,11,.45)] sm:-mt-10 sm:rounded-t-[36px]">
       {/* SERVICE BAR */}
-      <div className="border-b border-ink/[0.14] bg-paper">
+      <div className="overflow-hidden rounded-t-[28px] border-b border-ink/[0.14] bg-paper sm:rounded-t-[36px]">
         <div className="container flex overflow-x-auto py-[17px] sm:py-6 md:grid md:grid-cols-5 md:overflow-visible">
           {services.map((s, i) => (
             <div
@@ -201,7 +245,7 @@ export default function Home() {
       {shownCategories.length > 0 && (
         <section className="py-[68px] lg:py-[92px]">
           <div className="container">
-            <div className="mb-[35px] flex items-center justify-between gap-4 sm:items-end">
+            <motion.div variants={reveal} {...inView} className="mb-[35px] flex items-center justify-between gap-4 sm:items-end">
               <div>
                 <div className="mb-1.5 text-[10px] uppercase tracking-[0.28em] text-gold">Explore Our Weaves</div>
                 <h2 className="m-0 font-display text-[37px] font-medium leading-none sm:text-[42px] lg:text-[48px]">
@@ -211,14 +255,14 @@ export default function Home() {
               <Link to="/products" className="shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">
                 View all →
               </Link>
-            </div>
+            </motion.div>
 
             <motion.div
               className="grid grid-cols-3 gap-x-2 gap-y-[25px] sm:gap-x-3 sm:gap-y-[30px] md:grid-cols-6 md:gap-[26px]"
-              variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
+              variants={stagger} {...inView}
             >
               {shownCategories.map(cat => (
-                <motion.div key={cat} variants={fadeUp}>
+                <motion.div key={cat} variants={reveal}>
                   <Link to={`/products/${encodeURIComponent(cat)}`} className="group block text-center">
                     <div className="mx-auto aspect-square w-[88px] overflow-hidden rounded-full shadow-[0_9px_30px_rgba(49,35,22,.09)] transition-transform duration-[350ms] group-hover:-translate-y-[5px] group-hover:scale-[1.02] sm:w-[105px] lg:w-[126px]">
                       <ProductMedia url={mediaUrl(byCategory[cat]?.[0] || {})} />
@@ -236,11 +280,15 @@ export default function Home() {
       {/* FEATURE PANEL */}
       <section className="pb-[68px] pt-0 lg:pb-[92px]">
         <div className="container">
-          <div className="grid overflow-hidden rounded-[18px] shadow-[var(--shadow-lift)] md:grid-cols-[1.2fr_0.8fr]">
-            <div className="min-h-[280px] sm:min-h-[360px] md:min-h-[420px]">
+          <motion.div
+            variants={stagger} {...inView}
+            className="grid overflow-hidden rounded-[18px] shadow-[var(--shadow-lift)] md:grid-cols-[1.2fr_0.8fr]"
+          >
+            <motion.div variants={unmask} className="min-h-[280px] sm:min-h-[360px] md:min-h-[420px]">
               <ProductMedia url={artFor(1)} />
-            </div>
-            <div
+            </motion.div>
+            <motion.div
+              variants={reveal}
               className="flex flex-col justify-center px-[22px] py-[38px] sm:px-7 sm:py-11 md:px-14 md:py-[70px]"
               style={{ background: PANEL }}
             >
@@ -260,8 +308,8 @@ export default function Home() {
               >
                 Discover the Edit <span>→</span>
               </Link>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
@@ -269,7 +317,7 @@ export default function Home() {
       {newArrivals.length > 0 && (
         <section className="pb-[68px] pt-5 lg:pb-[92px]">
           <div className="container">
-            <div className="mb-[35px] flex items-center justify-between gap-4 sm:items-end">
+            <motion.div variants={reveal} {...inView} className="mb-[35px] flex items-center justify-between gap-4 sm:items-end">
               <div>
                 <div className="mb-1.5 text-[10px] uppercase tracking-[0.28em] text-gold">Handpicked Just For You</div>
                 <h2 className="m-0 font-display text-[37px] font-medium leading-none sm:text-[42px] lg:text-[48px]">
@@ -279,10 +327,10 @@ export default function Home() {
               <Link to="/products" className="shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">
                 View all →
               </Link>
-            </div>
+            </motion.div>
             <motion.div
               className="grid grid-cols-2 gap-x-3 gap-y-[22px] md:grid-cols-4 md:gap-[18px]"
-              variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
+              variants={stagger} {...inView}
             >
               {newArrivals.map((p, i) => (
                 <ProductCard key={p.id} product={p} badge={i === 2 ? 'Bestseller' : 'New'} />
@@ -294,11 +342,14 @@ export default function Home() {
 
       {/* ARTISAN */}
       <section className="bg-ink text-ivory">
-        <div className="grid md:grid-cols-2">
-          <div className="min-h-[280px] sm:min-h-[360px] md:min-h-[520px]">
+        <motion.div variants={stagger} {...inView} className="grid md:grid-cols-2">
+          <motion.div variants={unmask} className="min-h-[280px] sm:min-h-[360px] md:min-h-[520px]">
             <ProductMedia url={artFor(2)} />
-          </div>
-          <div className="flex flex-col justify-center px-[22px] py-11 sm:px-10 md:px-[70px] md:py-[70px]">
+          </motion.div>
+          <motion.div
+            variants={reveal}
+            className="flex flex-col justify-center px-[22px] py-11 sm:px-10 md:px-[70px] md:py-[70px]"
+          >
             <div className="text-[10px] uppercase tracking-[0.28em] text-gold-2">The Art Behind Every Saree</div>
             <h2 className="mb-[23px] mt-2.5 font-display text-[45px] font-medium leading-[0.9] sm:text-[50px] lg:text-[64px]">
               Crafted by
@@ -321,25 +372,25 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* OCCASIONS */}
       <section className="py-[68px] lg:py-[92px]">
         <div className="container">
-          <div className="mb-[35px]">
+          <motion.div variants={reveal} {...inView} className="mb-[35px]">
             <div className="mb-1.5 text-[10px] uppercase tracking-[0.28em] text-gold">Drape It Your Way</div>
             <h2 className="m-0 font-display text-[37px] font-medium leading-none sm:text-[42px] lg:text-[48px]">
               Collections for Every Occasion
             </h2>
-          </div>
+          </motion.div>
           <motion.div
             className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-[18px]"
-            variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
+            variants={stagger} {...inView}
           >
             {OCCASIONS.map((o, i) => (
-              <motion.div key={o.title} variants={fadeUp}>
+              <motion.div key={o.title} variants={reveal}>
                 <Link
                   to={shownCategories[i] ? `/products/${encodeURIComponent(shownCategories[i])}` : '/products'}
                   className="group relative block aspect-[1.05] overflow-hidden rounded-[12px]"
@@ -382,6 +433,7 @@ export default function Home() {
             </button>
           </form>
         </div>
+      </div>
       </div>
 
       <a

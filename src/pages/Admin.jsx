@@ -4,7 +4,7 @@ import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles,
 import toast from 'react-hot-toast';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
-import { PRODUCT_CATEGORY_MAP } from '../data/product-categories';
+import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
@@ -119,22 +119,29 @@ export default function Admin() {
 
   const clear = () => { setEditing(null); setForm(empty); setPreview(''); };
 
-  // Products whose category still doesn't match the reviewed mapping.
-  const pendingCategoryFixes = PRODUCT_CATEGORY_MAP.filter(entry => {
-    const product = products.find(p => p.id === entry.id);
-    return product && product.category !== entry.category;
+  // Reviewed products whose name, description or category is still unapplied.
+  const pendingFixes = CATALOGUE_FIXES.filter(fix => {
+    const product = products.find(p => p.id === fix.id);
+    if (!product) return false;
+    return product.name !== fix.name
+      || product.description !== fix.description
+      || product.category !== fix.category;
   });
 
-  const applyCategories = async () => {
-    if (!pendingCategoryFixes.length) return;
+  const applyFixes = async () => {
+    if (!pendingFixes.length) return;
     setBusy(true); setError('');
     let done = 0;
     try {
-      for (const entry of pendingCategoryFixes) {
-        await updateCatalogProduct(entry.id, { category: entry.category });
+      for (const fix of pendingFixes) {
+        await updateCatalogProduct(fix.id, {
+          name: fix.name,
+          description: fix.description,
+          category: fix.category,
+        });
         done += 1;
       }
-      toast.success(`${done} product${done === 1 ? '' : 's'} categorised`);
+      toast.success(`${done} product${done === 1 ? '' : 's'} updated`);
       await load();
     } catch (e) {
       setError(`Stopped after ${done} update(s): ${e.message}`);
@@ -166,18 +173,18 @@ export default function Admin() {
 
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
 
-      {pendingCategoryFixes.length > 0 && (
+      {pendingFixes.length > 0 && (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3 text-sm text-indigo-900">
             <FolderTree size={18} className="mt-0.5 shrink-0" />
             <p>
-              <b>{pendingCategoryFixes.length} product{pendingCategoryFixes.length === 1 ? '' : 's'}</b> can be sorted into
-              Kanjeevaram Silk, Bridal, Designer and Cotton based on what each saree's photos actually show. Everything
-              else is left untouched.
+              <b>{pendingFixes.length} product{pendingFixes.length === 1 ? '' : 's'}</b> have a reviewed name, description
+              and category ready to apply — written from each saree's own photos. Products outside that review are left
+              untouched.
             </p>
           </div>
-          <button className="dash-btn-primary shrink-0" onClick={applyCategories} disabled={busy}>
-            <FolderTree size={16} /> {busy ? 'Sorting...' : 'Sort into categories'}
+          <button className="dash-btn-primary shrink-0" onClick={applyFixes} disabled={busy}>
+            <FolderTree size={16} /> {busy ? 'Applying...' : 'Apply names & categories'}
           </button>
         </div>
       )}
