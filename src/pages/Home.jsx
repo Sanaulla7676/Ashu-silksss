@@ -55,7 +55,7 @@ const inView = { initial: 'hidden', whileInView: 'show', viewport: { once: true,
 
 const services = [
   { sym: '✦', title: '100% Pure Silk', text: 'Authentic & Certified' },
-  { sym: '◫', title: 'Free Shipping', text: 'Across India' },
+  { sym: '◫', title: 'Fast Delivery', text: 'Bengaluru 2 days · India 7 days' },
   { sym: '♢', title: 'Secure Payments', text: 'Trusted Checkout' },
   { sym: '↺', title: 'Easy Returns', text: 'Hassle Free' },
   { sym: '◌', title: 'Dedicated Support', text: "We're Here for You" },
@@ -209,7 +209,7 @@ export default function Home() {
     }
   };
 
-  const announcement = 'Complimentary Shipping Across India  ·  100% Pure Silk  ·  Easy Returns  ·  Handpicked in Bengaluru  ·  ';
+  const announcement = 'Delivered in 2 Working Days Within Bengaluru  ·  7 Working Days Across India  ·  100% Pure Silk  ·  Easy Returns  ·  ';
 
   return (
     <>

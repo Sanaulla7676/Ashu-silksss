@@ -96,7 +96,7 @@ export default function ProductCard({ product }) {
             </div>
           )}
           <div className="mt-1 flex items-center gap-1 text-[0.72rem] text-muted">
-            <Truck size={12} /> Free delivery
+            <Truck size={12} /> Bengaluru in 2 days
           </div>
         </div>
       </Link>

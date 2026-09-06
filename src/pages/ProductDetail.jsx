@@ -95,9 +95,22 @@ export default function ProductDetail() {
                 <span className="absolute left-4 top-4 rounded-sm bg-gold px-3 py-2 font-bold text-white">{discount}% OFF</span>
               )}
             />
-            <div className="mt-4 flex items-center justify-between gap-2 rounded border border-ink/10 bg-paper p-3.5 text-ink">
-              <span className="flex items-center gap-2"><Truck size={18} className="text-wine" /> Fast delivery</span>
-              <span className="flex items-center gap-2"><ShieldCheck size={18} className="text-wine" /> Quality checked</span>
+            <div className="mt-4 rounded border border-ink/10 bg-paper p-3.5 text-ink">
+              <div className="flex items-start gap-2">
+                <Truck size={18} className="mt-0.5 shrink-0 text-wine" />
+                <div>
+                  <b className="block text-[0.9rem]">Delivery</b>
+                  <span className="mt-0.5 block text-[0.82rem] text-muted">
+                    Within Bengaluru — 2 working days
+                  </span>
+                  <span className="block text-[0.82rem] text-muted">
+                    Outside Bengaluru — 7 working days
+                  </span>
+                </div>
+              </div>
+              <div className="mt-2.5 flex items-center gap-2 border-t border-ink/10 pt-2.5">
+                <ShieldCheck size={18} className="shrink-0 text-wine" /> Quality checked
+              </div>
             </div>
           </motion.div>
 

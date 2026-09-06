@@ -27,7 +27,7 @@ const COLOR_SWATCHES = [
 
 const trustBar = [
   { icon: Leaf, title: '100% Pure Silk', text: 'Certified Authentic' },
-  { icon: Truck, title: 'Free Shipping', text: 'On orders above ₹1999' },
+  { icon: Truck, title: 'Fast Delivery', text: 'Bengaluru 2 days · India 7 days' },
   { icon: ShieldCheck, title: 'Secure Payment', text: '100% Protected' },
   { icon: PackageCheck, title: 'Easy Returns', text: 'Hassle free returns' },
   { icon: Headphones, title: 'Silk Concierge', text: "We're here to help" },

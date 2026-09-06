@@ -199,6 +199,10 @@ export default function Checkout() {
                   onSubmit={e => { e.preventDefault(); setStep(2); }}
                 >
                   <h3 className="col-span-full flex items-center gap-2 text-ink"><MapPin size={20} /> Delivery Address</h3>
+                  <p className="col-span-full rounded border border-ink/10 bg-ivory p-3 text-[0.85rem] text-muted">
+                    <b className="text-ink">Delivery time:</b> within Bengaluru, 2 working days.
+                    Outside Bengaluru, 7 working days.
+                  </p>
                   <input className="field" required placeholder="Full name" value={address.name} onChange={e => setAddress({ ...address, name: e.target.value })} />
                   <input className="field" required pattern="[0-9+() -]{8,}" placeholder="Phone number" value={address.phone} onChange={e => setAddress({ ...address, phone: e.target.value })} />
                   <input className="field col-span-full" required placeholder="Address line 1" value={address.addressLine1} onChange={e => setAddress({ ...address, addressLine1: e.target.value })} />
