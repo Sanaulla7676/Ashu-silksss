@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles, FolderTree } from 'lucide-react';
+import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles, FolderTree, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
@@ -193,6 +193,29 @@ export default function Admin() {
     } finally { setBusy(false); }
   };
 
+  const draftProducts = products.filter(p => (p.status || 'active') === 'draft');
+  const photoCount = p => (Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0));
+  // A product still needs a photo, a price and stock to be worth showing.
+  const incompleteDrafts = draftProducts.filter(
+    p => !photoCount(p) || !Number(p.price) || Number(p.stock ?? 0) <= 0,
+  );
+
+  const publishDrafts = async () => {
+    if (!draftProducts.length) return;
+    setBusy(true); setError('');
+    let done = 0;
+    try {
+      for (const p of draftProducts) {
+        await updateCatalogProduct(p.id, { status: 'active' });
+        done += 1;
+      }
+      toast.success(`${done} product${done === 1 ? '' : 's'} set to Active`);
+      await load();
+    } catch (e) {
+      setError(`Stopped after ${done} update(s): ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
   const stockValue = p => stockDrafts[p.id] ?? String(p.stock ?? 0);
   const setStockDraft = (id, v) => setStockDrafts(d => ({ ...d, [id]: v }));
   const saveStock = async p => {
@@ -246,6 +269,28 @@ export default function Admin() {
           </div>
           <button className="dash-btn-primary shrink-0" onClick={createArrivals} disabled={busy}>
             <Plus size={16} /> {busy ? 'Creating...' : `Create ${pendingArrivals.length} sarees`}
+          </button>
+        </div>
+      )}
+
+      {draftProducts.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 text-sm text-amber-900">
+            <Eye size={18} className="mt-0.5 shrink-0" />
+            <div>
+              <p>
+                <b>{draftProducts.length} draft{draftProducts.length === 1 ? '' : 's'}</b> can be switched to Active.
+              </p>
+              {incompleteDrafts.length > 0 && (
+                <p className="mt-1 text-amber-800">
+                  {incompleteDrafts.length} of them still {incompleteDrafts.length === 1 ? 'has' : 'have'} no photo, no
+                  price or no stock. Anything with 0 stock stays hidden from the storefront even once Active.
+                </p>
+              )}
+            </div>
+          </div>
+          <button className="dash-btn-primary shrink-0" onClick={publishDrafts} disabled={busy}>
+            <Eye size={16} /> {busy ? 'Publishing...' : `Set ${draftProducts.length} to Active`}
           </button>
         </div>
       )}
