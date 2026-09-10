@@ -6,6 +6,7 @@ import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteC
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
+import { NEW_ARRIVALS_2 } from '../data/new-arrivals-batch2';
 import { useCategories } from '../context/CategoryContext';
 
 const empty = {
@@ -152,7 +153,8 @@ export default function Admin() {
 
   // Sarees identified from photos that aren't in the catalogue yet. Matched on
   // name so the button stops offering them once they have been created.
-  const pendingArrivals = NEW_ARRIVALS.filter(
+  const allArrivals = [...NEW_ARRIVALS, ...NEW_ARRIVALS_2];
+  const pendingArrivals = allArrivals.filter(
     arrival => !products.some(p => p.name === arrival.name),
   );
 
