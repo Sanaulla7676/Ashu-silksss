@@ -5,17 +5,17 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../context/AuthContext';
+import { useCategories } from '../context/CategoryContext';
 
-const categories = [
-  { to: '/products', label: 'All', end: true },
-  { to: '/products/Kanjeevaram Silk', label: 'Kanjeevaram' },
-  { to: '/products/Bridal', label: 'Bridal' },
-  { to: '/products/Designer', label: 'Designer' },
-  { to: '/products/Cotton', label: 'Cotton' },
-  { to: '/products/Tissue Silk', label: 'Tissue Silk' },
-  { to: '/about', label: 'About' },
-  { to: '/contact', label: 'Contact' },
-];
+/** Nav built from the categories managed in Admin → Categories. */
+function useNavLinks(categoryNames) {
+  return [
+    { to: '/products', label: 'All', end: true },
+    ...categoryNames.map(name => ({ to: `/products/${name}`, label: name })),
+    { to: '/about', label: 'About' },
+    { to: '/contact', label: 'Contact' },
+  ];
+}
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -46,6 +46,8 @@ export default function Header() {
   const { getItemCount } = useCart();
   const { wishlist } = useWishlist();
   const { user, logout } = useAuth();
+  const { categories: categoryNames } = useCategories();
+  const categories = useNavLinks(categoryNames);
   const close = () => setOpen(false);
   const cartCount = getItemCount();
 

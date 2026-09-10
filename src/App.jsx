@@ -9,6 +9,7 @@ import { WishlistProvider } from './context/WishlistContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { HeroProvider } from './context/HeroContext';
+import { CategoryProvider } from './context/CategoryContext';
 
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
@@ -28,6 +29,7 @@ const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 const AdminHero = lazy(() => import('./pages/AdminHero'));
 const AdminTeam = lazy(() => import('./pages/AdminTeam'));
 const AdminImport = lazy(() => import('./pages/AdminImport'));
+const AdminCategories = lazy(() => import('./pages/AdminCategories'));
 
 function PageFallback() {
   return (
@@ -76,6 +78,7 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
       <HeroProvider>
+      <CategoryProvider>
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
@@ -117,6 +120,7 @@ export default function App() {
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="theme" element={<AdminTheme />} />
+                  <Route path="categories" element={<AdminCategories />} />
                   <Route path="team" element={<AdminTeam />} />
                 </Route>
 
@@ -126,6 +130,7 @@ export default function App() {
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
+      </CategoryProvider>
       </HeroProvider>
       </ThemeProvider>
     </BrowserRouter>

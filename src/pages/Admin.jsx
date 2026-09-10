@@ -6,6 +6,7 @@ import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteC
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
+import { useCategories } from '../context/CategoryContext';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
@@ -15,7 +16,6 @@ const empty = {
   description: '', highlights: '', tags: '',
   media: '', video: '', featured: false,
 };
-const categories = ['Kanjeevaram Silk', 'Bridal', 'Designer', 'Cotton', 'Tissue Silk'];
 const blouseOptions = ['Included', 'Not included', 'Running blouse fabric'];
 const patternOptions = ['Checked', 'Striped', 'Zari Woven', 'Floral', 'Solid', 'Printed', 'Embroidered', 'Temple Border'];
 
@@ -31,6 +31,7 @@ function Section({ title, children }) {
 export default function Admin() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { categories } = useCategories();
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -307,7 +308,11 @@ export default function Admin() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input className="dash-field" placeholder="Brand" value={form.brand} onChange={e => set('brand', e.target.value)} />
               <select className="dash-field" required value={form.category} onChange={e => set('category', e.target.value)}>
-                {categories.map(c => <option key={c}>{c}</option>)}
+                {/* Keep a product's own category selectable even if it was removed
+                    from the list, so editing never silently reassigns it. */}
+                {(categories.includes(form.category) ? categories : [form.category, ...categories])
+                  .filter(Boolean)
+                  .map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

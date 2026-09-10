@@ -3,13 +3,14 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, Palette, Image as ImageIcon, Users, Sparkles as ImportIcon,
-  Menu, X, LogOut, ExternalLink, Sparkles,
+  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Products', icon: Package },
+  { to: '/admin/categories', label: 'Categories', icon: FolderTree },
   { to: '/admin/import', label: 'Import Photos', icon: ImportIcon },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
   { to: '/admin/hero', label: 'Hero Content', icon: ImageIcon },
