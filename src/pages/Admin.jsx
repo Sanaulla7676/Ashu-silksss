@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
+import { NEW_ARRIVALS } from '../data/new-arrivals';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
@@ -148,6 +149,50 @@ export default function Admin() {
     } finally { setBusy(false); }
   };
 
+  // Sarees identified from photos that aren't in the catalogue yet. Matched on
+  // name so the button stops offering them once they have been created.
+  const pendingArrivals = NEW_ARRIVALS.filter(
+    arrival => !products.some(p => p.name === arrival.name),
+  );
+
+  const createArrivals = async () => {
+    if (!pendingArrivals.length) return;
+    setBusy(true); setError('');
+    let done = 0;
+    try {
+      for (const arrival of pendingArrivals) {
+        await createCatalogProduct({
+          ...empty,
+          name: arrival.name,
+          category: arrival.category,
+          colour: arrival.colour,
+          fabric: arrival.fabric,
+          pattern: arrival.pattern,
+          workType: arrival.workType,
+          occasion: arrival.occasion,
+          description: arrival.description,
+          // Draft until a photo, price and stock are added.
+          status: 'draft',
+          sku: '',
+          price: 0,
+          mrp: 0,
+          gstPercent: 5,
+          stock: 0,
+          weight: 0,
+          media: [],
+          highlights: [],
+          tags: [],
+          featured: false,
+        });
+        done += 1;
+      }
+      toast.success(`${done} saree${done === 1 ? '' : 's'} created as drafts`);
+      await load();
+    } catch (e) {
+      setError(`Stopped after creating ${done}: ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
   const stockValue = p => stockDrafts[p.id] ?? String(p.stock ?? 0);
   const setStockDraft = (id, v) => setStockDrafts(d => ({ ...d, [id]: v }));
   const saveStock = async p => {
@@ -185,6 +230,22 @@ export default function Admin() {
           </div>
           <button className="dash-btn-primary shrink-0" onClick={applyFixes} disabled={busy}>
             <FolderTree size={16} /> {busy ? 'Applying...' : 'Apply names & categories'}
+          </button>
+        </div>
+      )}
+
+      {pendingArrivals.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 text-sm text-emerald-900">
+            <Sparkles size={18} className="mt-0.5 shrink-0" />
+            <p>
+              <b>{pendingArrivals.length} new saree{pendingArrivals.length === 1 ? '' : 's'}</b> identified from your latest
+              photos, with names, colours, fabric and descriptions already written. They will be created as{' '}
+              <b>drafts</b> — open each one to attach its photo and set the price and stock, then switch it to Active.
+            </p>
+          </div>
+          <button className="dash-btn-primary shrink-0" onClick={createArrivals} disabled={busy}>
+            <Plus size={16} /> {busy ? 'Creating...' : `Create ${pendingArrivals.length} sarees`}
           </button>
         </div>
       )}
