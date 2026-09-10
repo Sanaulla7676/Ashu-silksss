@@ -171,7 +171,8 @@ export default function Admin() {
           workType: arrival.workType,
           occasion: arrival.occasion,
           description: arrival.description,
-          // Draft until a photo, price and stock are added.
+          media: arrival.media,
+          // Photos are attached; draft until a price and stock are set.
           status: 'draft',
           sku: '',
           price: 0,
@@ -179,7 +180,6 @@ export default function Admin() {
           gstPercent: 5,
           stock: 0,
           weight: 0,
-          media: [],
           highlights: [],
           tags: [],
           featured: false,
@@ -263,8 +263,8 @@ export default function Admin() {
             <Sparkles size={18} className="mt-0.5 shrink-0" />
             <p>
               <b>{pendingArrivals.length} new saree{pendingArrivals.length === 1 ? '' : 's'}</b> identified from your latest
-              photos, with names, colours, fabric and descriptions already written. They will be created as{' '}
-              <b>drafts</b> — open each one to attach its photo and set the price and stock, then switch it to Active.
+              photos, with <b>photos already uploaded</b> plus names, colours, fabric and descriptions written from each
+              one. They arrive as <b>drafts</b> — set a price and stock on each, then switch it to Active.
             </p>
           </div>
           <button className="dash-btn-primary shrink-0" onClick={createArrivals} disabled={busy}>
