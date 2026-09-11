@@ -8,6 +8,7 @@ export const FALLBACK_CATEGORIES = [
   'Bridal',
   'Designer',
   'Cotton',
+  'Handloom Cotton Ilkal',
   'Tissue Silk',
 ];
 
