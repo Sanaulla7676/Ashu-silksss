@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react';
+import { productImage } from '../utils';
 
 export default function ProductMedia({ url, className = '' }) {
   if (!url) {
@@ -16,5 +17,5 @@ export default function ProductMedia({ url, className = '' }) {
     return <video className={base} src={url} muted playsInline loop autoPlay />;
   }
 
-  return <img className={base} src={url} alt="" loading="lazy" decoding="async" />;
+  return <img className={base} src={productImage(url)} alt="" loading="lazy" decoding="async" />;
 }

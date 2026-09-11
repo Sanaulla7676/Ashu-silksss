@@ -7,7 +7,7 @@ import ProductMedia from './ProductMedia';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { useImagePalette } from '../hooks/useImagePalette';
-import { money, mediaUrl, discountPercent } from '../utils';
+import { money, mediaUrl, discountPercent, productImage } from '../utils';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -44,7 +44,7 @@ function FadeImage({ url, className = '' }) {
 
   return (
     <img
-      src={url}
+      src={productImage(url)}
       alt=""
       loading="lazy"
       decoding="async"

@@ -3,7 +3,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../hooks/useCart';
-import { mediaUrl, money } from '../utils';
+import { mediaUrl, money, productImage } from '../utils';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, getTotal } = useCart();
@@ -41,7 +41,7 @@ export default function Cart() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                     >
-                      <img className="h-24 w-[76px] rounded object-cover sm:h-[116px] sm:w-[92px]" src={mediaUrl(item)} alt="" />
+                      <img className="h-24 w-[76px] rounded object-cover sm:h-[116px] sm:w-[92px]" src={productImage(mediaUrl(item))} alt="" />
                       <div>
                         <Link to={`/product/${item.id}`}><h3 className="text-[0.95rem] font-medium text-ink hover:text-wine sm:text-base">{item.name}</h3></Link>
                         <p className="my-1 text-sm text-muted">{item.category} · {item.fabric}</p>

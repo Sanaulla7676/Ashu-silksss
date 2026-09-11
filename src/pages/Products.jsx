@@ -12,7 +12,7 @@ import Pagination from '../components/Pagination';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
-import { money, mediaUrl, discountPercent } from '../utils';
+import { money, mediaUrl, discountPercent, productImage } from '../utils';
 
 const PAGE_SIZE = 12;
 const EASE = [0.22, 1, 0.36, 1];
@@ -159,7 +159,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
   const [loaded, setLoaded] = useState(false);
   const wished = isInWishlist(product.id);
   const badges = badgeFor(product, newIds);
-  const images = Array.isArray(product.media) ? product.media : [mediaUrl(product)];
+  const images = (Array.isArray(product.media) ? product.media : [mediaUrl(product)]).map(productImage);
   const secondImage = images[1];
 
   return (
@@ -272,7 +272,7 @@ function QuickView({ product, onClose }) {
     <Modal title="Quick view" onClose={onClose}>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="aspect-[4/5] overflow-hidden rounded-lg bg-ivory">
-          <img src={mediaUrl(product)} alt="" className="h-full w-full object-cover" />
+          <img src={productImage(mediaUrl(product))} alt="" className="h-full w-full object-cover" />
         </div>
         <div>
           <span className="eyebrow">{product.category}</span>
