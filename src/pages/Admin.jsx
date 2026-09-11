@@ -6,6 +6,7 @@ import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteC
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
+import { MYSORE_SILK_UPDATES } from '../data/mysore-silk-updates';
 import { useCategories } from '../context/CategoryContext';
 
 const empty = {
@@ -194,6 +195,40 @@ export default function Admin() {
     } finally { setBusy(false); }
   };
 
+  // Sarees already in the catalogue that appear in the Mysore silk photo shoot:
+  // they move into the Mysore Silk category and gain the new photographs,
+  // added after the ones they already have.
+  const mediaOf = p => (Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []));
+  const pendingMysore = MYSORE_SILK_UPDATES.filter(update => {
+    const product = products.find(p => p.id === update.id);
+    if (!product) return false;
+    const current = mediaOf(product);
+    return product.category !== 'Mysore Silk'
+      || (update.name && product.name !== update.name)
+      || update.media.some(url => !current.includes(url));
+  });
+
+  const applyMysore = async () => {
+    if (!pendingMysore.length) return;
+    setBusy(true); setError('');
+    let done = 0;
+    try {
+      for (const update of pendingMysore) {
+        const current = mediaOf(products.find(p => p.id === update.id));
+        await updateCatalogProduct(update.id, {
+          category: 'Mysore Silk',
+          media: [...current, ...update.media.filter(url => !current.includes(url))],
+          ...(update.name ? { name: update.name } : {}),
+        });
+        done += 1;
+      }
+      toast.success(`${done} saree${done === 1 ? '' : 's'} moved to Mysore Silk`);
+      await load();
+    } catch (e) {
+      setError(`Stopped after ${done} update(s): ${e.message}`);
+    } finally { setBusy(false); }
+  };
+
   const draftProducts = products.filter(p => (p.status || 'active') === 'draft');
   const photoCount = p => (Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0));
   // A product still needs a photo, a price and stock to be worth showing.
@@ -254,6 +289,22 @@ export default function Admin() {
           </div>
           <button className="dash-btn-primary shrink-0" onClick={applyFixes} disabled={busy}>
             <FolderTree size={16} /> {busy ? 'Applying...' : 'Apply names & categories'}
+          </button>
+        </div>
+      )}
+
+      {pendingMysore.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 text-sm text-violet-900">
+            <FolderTree size={18} className="mt-0.5 shrink-0" />
+            <p>
+              <b>{pendingMysore.length} saree{pendingMysore.length === 1 ? '' : 's'}</b> already on the site appear in your
+              Mysore silk photo shoot. This moves them into the <b>Mysore Silk</b> category and adds the new photos after
+              their existing ones — price, stock and descriptions stay as they are.
+            </p>
+          </div>
+          <button className="dash-btn-primary shrink-0" onClick={applyMysore} disabled={busy}>
+            <FolderTree size={16} /> {busy ? 'Updating...' : `Move ${pendingMysore.length} to Mysore Silk`}
           </button>
         </div>
       )}
