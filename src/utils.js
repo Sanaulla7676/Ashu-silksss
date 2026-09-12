@@ -9,9 +9,11 @@ export const mediaUrl = p => p?.media?.[0] || '';
 // Sarees photographed on the marble floor are shown on the same warm cream
 // backdrop as the studio shoot of 2026-08-31. Cloudinary cuts the saree out
 // at delivery time, so the uploaded original is untouched and this is
-// reversible by deleting the transformation.
+// reversible by deleting the transformation. Photos already taken in the
+// studio keep their own backdrop — cutting them out would remove the props
+// styled beside the saree.
 const STUDIO_BACKDROP = 'c_limit,w_1200/e_background_removal/b_rgb:f9e6cb/q_auto';
-const ALREADY_ON_CREAM = /\/ashu-silks\/products\/import-2026-08-31\//;
+const ALREADY_ON_CREAM = /\/ashu-silks\/products\/(import-2026-08-31|studio-)/;
 
 export const productImage = url => {
   if (!url || !/\/image\/upload\/v\d+\/ashu-silks\/products\//.test(url)) return url;
