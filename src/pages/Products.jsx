@@ -232,8 +232,8 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
         </Link>
 
         <div className="mt-1.5 flex flex-wrap items-baseline gap-2">
-          <b className="text-[16px] font-bold text-wine">{money(product.price)}</b>
-          {product.mrp > product.price && (
+          <b className="text-[16px] font-bold text-wine">{product.priceOnRequest ? 'Price on request' : money(product.price)}</b>
+          {!product.priceOnRequest && product.mrp > product.price && (
             <>
               <s className="text-[12px] text-muted">{money(product.mrp)}</s>
               <span className="text-[11px] font-bold text-wine">-{discountPercent(product.price, product.mrp)}%</span>
@@ -249,15 +249,25 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
               </span>
             ))}
           </div>
-          <motion.button
-            whileHover={{ backgroundColor: 'var(--color-wine-2)' }}
-            transition={{ duration: 0.2, ease: EASE }}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-[7px] bg-wine text-white"
-            onClick={() => { addToCart(product); toast.success(`${product.name} added to cart`); }}
-            aria-label="Add to bag"
-          >
-            <ShoppingBag size={16} />
-          </motion.button>
+          {product.priceOnRequest ? (
+            <Link
+              to={`/product/${product.id}`}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-[7px] bg-wine text-white"
+              aria-label="View product"
+            >
+              <ChevronRight size={16} />
+            </Link>
+          ) : (
+            <motion.button
+              whileHover={{ backgroundColor: 'var(--color-wine-2)' }}
+              transition={{ duration: 0.2, ease: EASE }}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-[7px] bg-wine text-white"
+              onClick={() => { addToCart(product); toast.success(`${product.name} added to cart`); }}
+              aria-label="Add to bag"
+            >
+              <ShoppingBag size={16} />
+            </motion.button>
+          )}
         </div>
       </div>
     </motion.article>
@@ -352,7 +362,7 @@ export default function Products() {
   const patternOptions = facetOptions('pattern');
 
   const filtered = useMemo(() => {
-    let result = inCategory.filter(p => Number(p.price) >= maxRange[0] && Number(p.price) <= maxRange[1]);
+    let result = inCategory.filter(p => p.priceOnRequest || (Number(p.price) >= maxRange[0] && Number(p.price) <= maxRange[1]));
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(p => [p.name, p.category, p.description, p.colour, p.fabric, p.occasion, p.sku].some(v => String(v || '').toLowerCase().includes(q)));
