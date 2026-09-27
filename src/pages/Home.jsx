@@ -408,41 +408,92 @@ export default function Home() {
         {/* LATEST PHOTO DROP */}
         <section className="pb-[68px] lg:pb-[92px]">
           <div className="container">
-            <SectionHeading kicker="Latest Studio Drop" title="New From Ashu Silks"
-              action={<Link to="/products" className="group shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">Shop all <span className="inline-block transition-transform group-hover:translate-x-1">→</span></Link>}
+            <SectionHeading
+              kicker="Latest Studio Drop"
+              title="New From Ashu Silks"
+              action={
+                <Link to="/products" className="group shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">
+                  Shop all <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                </Link>
+              }
             />
-            <motion.div variants={stagger} {...inView} className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+
+            <motion.div
+              variants={staggerFast}
+              {...inView}
+              className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-5"
+            >
               {[
-                ["Pink Zari Elegance","Designer Saree","Pink / Rose","Elegant pink drape with ornate metallic floral borders and subtle scattered motif detailing."],
-                ["Lime & Turquoise Woven","Festive Saree","Lime Green / Turquoise","Lime green body paired with a luminous turquoise woven pallu, multicolour motifs and tasselled finish."],
-                ["Midnight Floral Paisley","Designer Saree","Navy / Black","Deep dark base with intricate silver floral and paisley patterning framed by ornate borders."],
-                ["Emerald Heritage Embroidery","Festive Saree","Emerald Green / Red","Rich emerald and red palette with dense heritage-inspired embroidery, geometric panels and tassel accents."],
-                ["Purple Peacock Motif","Designer Saree","Deep Purple","Deep purple saree with an elegant peacock motif, silver geometric border and coordinated tassels."]
-              ].map(([name, category, colour, description], cardIndex) => (
-                <motion.article key={name} variants={reveal} className="group overflow-hidden rounded-[14px] border border-ink/[0.08] bg-paper shadow-[0_10px_30px_rgba(49,35,22,.08)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(49,35,22,.15)]">
+                {
+                  name: 'Royal Pink Embroidered Saree',
+                  colour: 'Royal Pink',
+                  occasion: 'Festive · Party',
+                  description: 'Rich royal-pink saree with delicate metallic floral border embroidery and a subtle textured body.',
+                  images: [
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/264af34e-9e36-4814-ae6c-43309e9b4100.jpg',
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/12a71967-8ee2-4c5b-9b56-2827fdb9df1b.jpg',
+                  ],
+                },
+                {
+                  name: 'Parrot Green & Turquoise Woven Saree',
+                  colour: 'Parrot Green · Turquoise',
+                  occasion: 'Festive · Wedding',
+                  description: 'Fresh parrot-green body paired with a luminous turquoise woven pallu, multicolour motifs and statement tassels.',
+                  images: [
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/bcd23f30-7400-43ed-a774-5827504dd302.jpg',
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/2f5fb184-9bfb-408d-abbc-4367b678e803.jpg',
+                  ],
+                },
+                {
+                  name: 'Purple Bird Motif Saree',
+                  colour: 'Deep Purple',
+                  occasion: 'Festive · Party',
+                  description: 'Deep purple saree with distinctive bird-and-branch motifs, silver wave-pattern borders and matching tassel detailing.',
+                  images: [
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/1453d140-8d0a-45b6-ad0f-45cb51f91153.jpg',
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/d9c20d0d-237a-4d0f-867c-1e4c8873b838.jpg',
+                  ],
+                },
+                {
+                  name: 'Midnight Blue & Black Embroidered Saree',
+                  colour: 'Midnight Blue · Black',
+                  occasion: 'Festive · Evening',
+                  description: 'Dark blue-black saree featuring dense floral and paisley embroidery with ornate repeating border panels.',
+                  images: [
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/efd54812-6781-4aa2-b425-306c67f08781.jpg',
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/7cfdbad4-b630-4aac-8807-60d1eacf47b4.jpg',
+                  ],
+                },
+                {
+                  name: 'Deep Purple Bird Motif Saree',
+                  colour: 'Deep Purple',
+                  occasion: 'Festive · Special Occasions',
+                  description: 'A rich deep-purple saree with a bird motif, silver geometric border and hand-finished purple tassels.',
+                  images: [
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/76f04c99-31d4-4a33-84d8-ae98680edd36.jpg',
+                    'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/d141a9fb-d565-43c1-948c-dc6d2378c680.jpg',
+                  ],
+                },
+              ].map((p, i) => (
+                <motion.div key={p.name} variants={reveal} className="group overflow-hidden rounded-[12px] border border-ink/[0.08] bg-paper shadow-[0_12px_32px_-22px_rgba(20,15,11,.4)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_44px_-24px_rgba(20,15,11,.55)]">
                   <Link to="/products" className="block">
-                    <div className="grid grid-cols-2 gap-px bg-ink/[0.08] p-px">
-                      {[cardIndex * 2, cardIndex * 2 + 1].map(photoIndex => (
-                        <div key={photoIndex} className="aspect-[4/3] overflow-hidden bg-[#f6f0e6]">
-                          <div className="h-full w-full bg-no-repeat transition-transform duration-[700ms] ease-out group-hover:scale-[1.035]"
-                            style={{
-                              backgroundImage: "url('/products/ashu-batch-2026-09-27.webp')",
-                              backgroundSize: '100% 1000%',
-                              backgroundPosition: `center ${(photoIndex / 9) * 100}%`
-                            }}
-                          />
-                        </div>
-                      ))}
+                    <div className="relative aspect-[3/4] overflow-hidden bg-[#f6f0e6]">
+                      <img src={p.images[0]} alt={p.name} className="absolute inset-0 h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.03] group-hover:opacity-0" loading="lazy" />
+                      <img src={p.images[1]} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-700 group-hover:scale-[1.03] group-hover:opacity-100" loading="lazy" />
+                      <span className="absolute left-3 top-3 rounded-full bg-wine px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.16em] text-white">New</span>
+                      <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-ink backdrop-blur-sm">Studio Photo</span>
                     </div>
                     <div className="p-3.5 sm:p-4">
-                      <div className="mb-1 text-[8px] uppercase tracking-[0.22em] text-gold">{category}</div>
-                      <h3 className="m-0 font-display text-[18px] font-medium leading-[1.05] text-ink sm:text-[20px]">{name}</h3>
-                      <div className="mt-1 text-[10px] font-medium text-muted">{colour}</div>
-                      <p className="mt-2.5 text-[11px] leading-[1.65] text-muted sm:text-[12px]">{description}</p>
-                      <span className="mt-3 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink">View collection <span className="transition-transform group-hover:translate-x-1.5">→</span></span>
+                      <h3 className="m-0 font-display text-[18px] font-medium leading-[1.05] text-ink sm:text-[20px]">{p.name}</h3>
+                      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-gold">{p.colour}</p>
+                      <p className="mt-2 text-[10px] leading-[1.55] text-muted">{p.description}</p>
+                      <div className="mt-3 flex items-center justify-between border-t border-ink/[0.08] pt-3 text-[9px] uppercase tracking-[0.1em] text-muted">
+                        <span>{p.occasion}</span>
+                        <span className="text-ink transition-transform duration-300 group-hover:translate-x-1">View →</span>
+                      </div>
                     </div>
                   </Link>
-                </motion.article>
+                </motion.div>
               ))}
             </motion.div>
           </div>
