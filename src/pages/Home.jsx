@@ -405,6 +405,38 @@ export default function Home() {
           </div>
         </section>
 
+        {/* LATEST PHOTO DROP */}
+        <section className="pb-[68px] lg:pb-[92px]">
+          <div className="container">
+            <SectionHeading
+              kicker="Latest Studio Drop"
+              title="New From Ashu Silks"
+              action={<Link to="/products" className="group shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">Shop all <span className="inline-block transition-transform group-hover:translate-x-1">→</span></Link>}
+            />
+            <motion.div variants={reveal} {...inView} className="grid overflow-hidden rounded-[18px] border border-ink/[0.08] bg-paper shadow-[var(--shadow-lift)] md:grid-cols-[1.1fr_0.9fr]">
+              <div className="relative min-h-[280px] overflow-hidden bg-[#f6f0e6] sm:min-h-[390px]">
+                <img
+                  src="/products/maroon-bandhani-zari-01.jpg"
+                  alt="Deep Maroon Bandhani Zari Silk Saree"
+                  className="h-full w-full object-cover transition-transform duration-[900ms] hover:scale-[1.04]"
+                  loading="lazy"
+                />
+              </div>
+              <div className="flex flex-col justify-center px-[22px] py-[38px] sm:px-8 sm:py-11 md:px-14 md:py-[70px]" style={{ background: PANEL }}>
+                <div className="text-[10px] uppercase tracking-[0.28em] text-gold">Featured Product</div>
+                <h2 className="mb-4 mt-3 font-display text-[38px] font-medium leading-[0.95] text-ink sm:text-[48px]">Deep Maroon<br />Bandhani Zari</h2>
+                <p className="max-w-[450px] text-[14px] leading-[1.8] text-muted">A rich deep-maroon saree featuring intricate dotted Bandhani-style motifs, ornate metallic zari borders and statement circular medallion details.</p>
+                <div className="mt-5 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Designer Saree</span>
+                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Maroon · Gold</span>
+                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Festive Edit</span>
+                </div>
+                <Link to="/products" className="group mt-6 inline-flex w-fit items-center gap-[18px] rounded-[4px] bg-ink px-5 py-[14px] text-[12px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,.25)]">Explore Sarees <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span></Link>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* ALL PRODUCTS */}
         {(loading || orderedProducts.length > 0) && (
           <section className="pb-[68px] pt-5 lg:pb-[92px]">
