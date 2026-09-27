@@ -181,7 +181,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
             onLoad={() => setLoaded(true)}
             animate={{ scale: hovered ? 1.045 : 1, opacity: !loaded ? 0 : (secondImage && hovered ? 0 : 1) }}
             transition={{ duration: 0.4, ease: EASE }}
-            className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${loaded ? 'blur-0' : 'blur-md'}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${product.priceOnRequest ? 'mix-blend-multiply' : ''} ${loaded ? 'blur-0' : 'blur-md'}`}
           />
           {secondImage && (
             <motion.img
@@ -190,7 +190,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
               loading="lazy"
               animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1.045 : 1 }}
               transition={{ duration: 0.4, ease: EASE }}
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover ${product.priceOnRequest ? 'mix-blend-multiply' : ''}`}
             />
           )}
         </Link>
