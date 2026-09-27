@@ -408,31 +408,42 @@ export default function Home() {
         {/* LATEST PHOTO DROP */}
         <section className="pb-[68px] lg:pb-[92px]">
           <div className="container">
-            <SectionHeading
-              kicker="Latest Studio Drop"
-              title="New From Ashu Silks"
+            <SectionHeading kicker="Latest Studio Drop" title="New From Ashu Silks"
               action={<Link to="/products" className="group shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">Shop all <span className="inline-block transition-transform group-hover:translate-x-1">→</span></Link>}
             />
-            <motion.div variants={reveal} {...inView} className="grid overflow-hidden rounded-[18px] border border-ink/[0.08] bg-paper shadow-[var(--shadow-lift)] md:grid-cols-[1.1fr_0.9fr]">
-              <div className="relative min-h-[280px] overflow-hidden bg-[#f6f0e6] sm:min-h-[390px]">
-                <img
-                  src="/products/maroon-bandhani-zari-01.jpg"
-                  alt="Deep Maroon Bandhani Zari Silk Saree"
-                  className="h-full w-full object-cover transition-transform duration-[900ms] hover:scale-[1.04]"
-                  loading="lazy"
-                />
-              </div>
-              <div className="flex flex-col justify-center px-[22px] py-[38px] sm:px-8 sm:py-11 md:px-14 md:py-[70px]" style={{ background: PANEL }}>
-                <div className="text-[10px] uppercase tracking-[0.28em] text-gold">Featured Product</div>
-                <h2 className="mb-4 mt-3 font-display text-[38px] font-medium leading-[0.95] text-ink sm:text-[48px]">Deep Maroon<br />Bandhani Zari</h2>
-                <p className="max-w-[450px] text-[14px] leading-[1.8] text-muted">A rich deep-maroon saree featuring intricate dotted Bandhani-style motifs, ornate metallic zari borders and statement circular medallion details.</p>
-                <div className="mt-5 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.12em] text-muted">
-                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Designer Saree</span>
-                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Maroon · Gold</span>
-                  <span className="rounded-full border border-ink/10 bg-white/60 px-3 py-2">Festive Edit</span>
-                </div>
-                <Link to="/products" className="group mt-6 inline-flex w-fit items-center gap-[18px] rounded-[4px] bg-ink px-5 py-[14px] text-[12px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,.25)]">Explore Sarees <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span></Link>
-              </div>
+            <motion.div variants={stagger} {...inView} className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+              {[
+                ["Pink Zari Elegance","Designer Saree","Pink / Rose","Elegant pink drape with ornate metallic floral borders and subtle scattered motif detailing."],
+                ["Lime & Turquoise Woven","Festive Saree","Lime Green / Turquoise","Lime green body paired with a luminous turquoise woven pallu, multicolour motifs and tasselled finish."],
+                ["Midnight Floral Paisley","Designer Saree","Navy / Black","Deep dark base with intricate silver floral and paisley patterning framed by ornate borders."],
+                ["Emerald Heritage Embroidery","Festive Saree","Emerald Green / Red","Rich emerald and red palette with dense heritage-inspired embroidery, geometric panels and tassel accents."],
+                ["Purple Peacock Motif","Designer Saree","Deep Purple","Deep purple saree with an elegant peacock motif, silver geometric border and coordinated tassels."]
+              ].map(([name, category, colour, description], cardIndex) => (
+                <motion.article key={name} variants={reveal} className="group overflow-hidden rounded-[14px] border border-ink/[0.08] bg-paper shadow-[0_10px_30px_rgba(49,35,22,.08)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(49,35,22,.15)]">
+                  <Link to="/products" className="block">
+                    <div className="grid grid-cols-2 gap-px bg-ink/[0.08] p-px">
+                      {[cardIndex * 2, cardIndex * 2 + 1].map(photoIndex => (
+                        <div key={photoIndex} className="aspect-[4/3] overflow-hidden bg-[#f6f0e6]">
+                          <div className="h-full w-full bg-no-repeat transition-transform duration-[700ms] ease-out group-hover:scale-[1.035]"
+                            style={{
+                              backgroundImage: "url('/products/ashu-batch-2026-09-27.webp')",
+                              backgroundSize: '100% 1000%',
+                              backgroundPosition: `center ${(photoIndex / 9) * 100}%`
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3.5 sm:p-4">
+                      <div className="mb-1 text-[8px] uppercase tracking-[0.22em] text-gold">{category}</div>
+                      <h3 className="m-0 font-display text-[18px] font-medium leading-[1.05] text-ink sm:text-[20px]">{name}</h3>
+                      <div className="mt-1 text-[10px] font-medium text-muted">{colour}</div>
+                      <p className="mt-2.5 text-[11px] leading-[1.65] text-muted sm:text-[12px]">{description}</p>
+                      <span className="mt-3 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink">View collection <span className="transition-transform group-hover:translate-x-1.5">→</span></span>
+                    </div>
+                  </Link>
+                </motion.article>
+              ))}
             </motion.div>
           </div>
         </section>
