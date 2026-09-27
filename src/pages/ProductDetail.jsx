@@ -137,9 +137,9 @@ export default function ProductDetail() {
               </ul>
             )}
             <div className="my-5 flex flex-wrap items-center gap-3.5">
-              <b className="text-3xl text-ink">{money(product.price)}</b>
-              {product.mrp && <s className="text-lg text-muted">{money(product.mrp)}</s>}
-              {discount > 0 && (
+              <b className="text-3xl text-ink">{product.priceOnRequest ? 'Price on request' : money(product.price)}</b>
+              {!product.priceOnRequest && product.mrp && <s className="text-lg text-muted">{money(product.mrp)}</s>}
+              {!product.priceOnRequest && discount > 0 && (
                 <span className="rounded-sm bg-success-bg px-2.5 py-1.5 font-bold text-success">
                   You save {money(product.mrp - product.price)}
                 </span>
@@ -166,8 +166,10 @@ export default function ProductDetail() {
               <CheckCircle size={18} /> {product.stock} pieces available in store
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <button className="btn-primary" onClick={handleAdd}><ShoppingBag size={18} /> Add to Cart</button>
-              <button className="btn-dark" onClick={() => setEnquiryOpen(true)}><MessageCircle size={18} /> Enquire</button>
+              {!product.priceOnRequest && (
+                <button className="btn-primary" onClick={handleAdd}><ShoppingBag size={18} /> Add to Cart</button>
+              )}
+              <button className="btn-dark" onClick={() => setEnquiryOpen(true)}><MessageCircle size={18} /> {product.priceOnRequest ? 'Enquire for Price' : 'Enquire'}</button>
               <button className="btn-ghost" onClick={handleWishlist}>
                 <Heart size={18} fill={wished ? 'var(--color-gold)' : 'none'} stroke={wished ? 'var(--color-gold)' : 'currentColor'} /> Wishlist
               </button>
