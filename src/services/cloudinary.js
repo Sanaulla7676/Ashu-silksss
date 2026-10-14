@@ -14,15 +14,8 @@ async function upload(file, { resourceType, folder }) {
   body.append('folder', folder);
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { method: 'POST', body });
-  const contentType = res.headers.get('content-type') || '';
-  let data;
-  if (contentType.includes('application/json')) {
-    data = await res.json();
-  } else {
-    data = { error: { message: await res.text() } };
-  }
-  if (!res.ok) throw new Error(data?.error?.message || `Upload failed (HTTP ${res.status}).`);
-  if (!data?.secure_url) throw new Error('Upload finished without an image URL. Check the Cloudinary upload preset.');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || 'Upload failed.');
   return data.secure_url;
 }
 
@@ -30,4 +23,23 @@ export async function uploadProductImage(file, productId = 'new') {
   if (!cloudinaryReady) throw new Error('Cloudinary is not configured.');
   if (!file) throw new Error('Choose an image first.');
   if (!IMAGE_TYPES.includes(file.type)) throw new Error('Use JPG, PNG, WEBP or AVIF images.');
-  if ¶»§q«^
+  if (file.size > MAX_SIZE) throw new Error('Image must be 8 MB or smaller.');
+  return upload(file, { resourceType: 'image', folder: `ashu-silks/products/${productId}` });
+}
+
+// Accepts an image OR a short video for the homepage hero.
+export async function uploadHeroMedia(file) {
+  if (!cloudinaryReady) throw new Error('Cloudinary is not configured.');
+  if (!file) throw new Error('Choose a file first.');
+  if (IMAGE_TYPES.includes(file.type)) {
+    if (file.size > MAX_SIZE) throw new Error('Image must be 8 MB or smaller.');
+    const url = await upload(file, { resourceType: 'image', folder: 'ashu-silks/hero' });
+    return { type: 'image', url };
+  }
+  if (VIDEO_TYPES.includes(file.type)) {
+    if (file.size > MAX_VIDEO_SIZE) throw new Error('Video must be 60 MB or smaller.');
+    const url = await upload(file, { resourceType: 'video', folder: 'ashu-silks/hero' });
+    return { type: 'video', url };
+  }
+  throw new Error('Use a JPG/PNG/WEBP image or an MP4/WEBM video.');
+}

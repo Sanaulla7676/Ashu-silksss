@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, ArrowRight, Check, Eye } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -7,7 +7,7 @@ import ProductMedia from './ProductMedia';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { useImagePalette } from '../hooks/useImagePalette';
-import { money, mediaUrl, mediaUrls, discountPercent, productImage } from '../utils';
+import { money, mediaUrl, discountPercent, productImage } from '../utils';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -32,4 +32,258 @@ function subtitleFor(product) {
   const parts = [product.fabric, product.workType || product.pattern].filter(Boolean);
   if (parts.length) return parts.join(' Â· ');
   if (product.occasion) return product.occasion;
-  return 'Pure silk Â· Handwo¶»§q«^
+  return 'Pure silk Â· Handwoven';
+}
+
+/** Fades a photo in once it has actually decoded, so nothing pops. */
+function FadeImage({ url, className = '' }) {
+  const [loaded, setLoaded] = useState(false);
+  const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url || '') || (url || '').includes('/video/upload/');
+
+  if (!url || isVideo) return <ProductMedia url={url} className={className} />;
+
+  return (
+    <img
+      src={productImage(url)}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setLoaded(true)}
+      className={`h-full w-full object-cover transition-[opacity,filter] duration-700 ease-out ${
+        loaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'
+      } ${className}`}
+    />
+  );
+}
+
+export default function LuxuryProductCard({ product, badge, onQuickView }) {
+  const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist } = useWishlist();
+  const wished = isInWishlist(product.id);
+
+  const gallery = Array.isArray(product.media) ? product.media.filter(Boolean) : [];
+  const image = mediaUrl(product);
+  const altImage = gallery[1] || '';
+  const palette = useImagePalette(image);
+  const discount = discountPercent(product.price, product.mrp);
+
+  const [heartPop, setHeartPop] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  // Pointer-follow tilt on the photo.
+  const frameRef = useRef(null);
+  const px = useMotionValue(0.5);
+  const py = useMotionValue(0.5);
+  const rotateX = useSpring(useTransform(py, [0, 1], [5, -5]), { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(useTransform(px, [0, 1], [-6, 6]), { stiffness: 200, damping: 20 });
+
+  const onPointerMove = e => {
+    const rect = frameRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    px.set((e.clientX - rect.left) / rect.width);
+    py.set((e.clientY - rect.top) / rect.height);
+  };
+  const resetTilt = () => { px.set(0.5); py.set(0.5); };
+
+  const swatches = palette.slice(0, 4);
+  const extraSwatches = Math.max(palette.length - 4, 0);
+  const tagline = taglineFor(product);
+
+  const handleAdd = () => {
+    addToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1600);
+    toast.success(`${product.name} added to bag`);
+  };
+
+  return (
+    <motion.article
+      variants={cardReveal}
+      className="group relative flex flex-col overflow-hidden rounded-[14px] border border-ink/[0.07] bg-paper shadow-[0_2px_14px_-6px_rgba(37,25,15,.16)] transition-all duration-[550ms] ease-out hover:-translate-y-1.5 hover:border-gold/30 hover:shadow-[0_28px_54px_-24px_rgba(37,25,15,.45)]"
+      style={{ perspective: 1000 }}
+    >
+      {/* PHOTO */}
+      <div
+        ref={frameRef}
+        onPointerMove={onPointerMove}
+        onPointerLeave={resetTilt}
+        className="relative aspect-[1.06] overflow-hidden bg-ivory"
+      >
+        <Link to={`/product/${product.id}`} className="block h-full w-full">
+          <motion.div style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }} className="h-full w-full">
+            {/* Primary photo */}
+            <div
+              className={`h-full w-full scale-[1.04] transition-all duration-[900ms] ease-out group-hover:scale-[1.13] ${
+                altImage ? 'group-hover:opacity-0' : ''
+              }`}
+            >
+              <FadeImage url={image} />
+            </div>
+            {/* Second photo of the same saree, revealed on hover */}
+            {altImage && (
+              <div className="absolute inset-0 scale-[1.13] opacity-0 transition-all duration-[900ms] ease-out group-hover:scale-[1.04] group-hover:opacity-100">
+                <FadeImage url={altImage} />
+              </div>
+            )}
+          </motion.div>
+
+          <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(105deg,rgba(28,20,14,.46)_0%,rgba(28,20,14,.12)_46%,transparent_72%)]" />
+          <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(28,20,14,.34),transparent_58%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        </Link>
+
+        {/* Badge */}
+        {badge && (
+          <motion.span
+            initial={{ opacity: 0, y: -10, scale: 0.9 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: EASE, delay: 0.15 }}
+            className="as-shine absolute left-2 top-2 z-[3] rounded-[4px] bg-paper/95 px-2 py-[5px] text-[7.5px] font-semibold uppercase tracking-[0.14em] text-ink shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:py-[6px] sm:text-[8.5px] sm:tracking-[0.16em]"
+          >
+            {badge}
+          </motion.span>
+        )}
+
+        {/* Photo count, so people know there is more to see */}
+        {gallery.length > 1 && (
+          <span className="absolute bottom-3 right-3 z-[3] rounded-full bg-ink/55 px-2 py-[3px] text-[9px] font-medium text-white/90 backdrop-blur transition-opacity duration-300 group-hover:opacity-0">
+            1/{gallery.length}
+          </span>
+        )}
+
+        {/* Wishlist */}
+        <motion.button
+          animate={heartPop ? { scale: [1, 1.4, 0.9, 1] } : { scale: 1 }}
+          transition={{ duration: 0.45, ease: EASE }}
+          whileTap={{ scale: 0.86 }}
+          onClick={() => {
+            setHeartPop(true);
+            setTimeout(() => setHeartPop(false), 460);
+            addToWishlist(product.id);
+            toast(wished ? 'Removed from wishlist' : 'Saved to wishlist', { icon: wished ? 'ðŸ’”' : 'â¤ï¸' });
+          }}
+          aria-label={wished ? 'Remove from wishlist' : 'Save to wishlist'}
+          className={`absolute right-2 top-2 z-[3] grid h-[29px] w-[29px] place-items-center rounded-full shadow-sm backdrop-blur transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:right-3 sm:top-3 sm:h-[34px] sm:w-[34px] ${
+            wished ? 'bg-wine text-white' : 'bg-paper/95 text-ink hover:bg-white'
+          }`}
+        >
+          <Heart size={14.5} fill={wished ? 'currentColor' : 'none'} />
+        </motion.button>
+
+        {/* Editorial line */}
+        <div className="pointer-events-none absolute left-2.5 top-[42px] z-[2] select-none transition-opacity duration-500 group-hover:opacity-0 sm:left-4 sm:top-[52px]">
+          {tagline.map((line, i) => (
+            <motion.span
+              key={line}
+              initial={{ opacity: 0, x: -14 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.6, ease: EASE, delay: 0.25 + i * 0.09 }}
+              className="block text-[8.5px] uppercase leading-[1.5] tracking-[0.12em] text-white/92 drop-shadow-[0_1px_6px_rgba(0,0,0,.5)] sm:text-[10.5px] sm:leading-[1.55] sm:tracking-[0.15em]"
+            >
+              {line}
+            </motion.span>
+          ))}
+        </div>
+
+        {/* Quick view slides up on hover */}
+        {onQuickView && (
+          <button
+            onClick={() => onQuickView(product)}
+            className="absolute inset-x-2 bottom-2 z-[3] flex translate-y-[130%] items-center justify-center gap-1.5 rounded-[6px] bg-paper/95 py-2 text-[8.5px] font-semibold uppercase tracking-[0.12em] text-ink opacity-0 shadow-lg backdrop-blur transition-all duration-[450ms] ease-out group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 sm:inset-x-3 sm:bottom-3 sm:gap-2 sm:py-2.5 sm:text-[10px] sm:tracking-[0.16em]"
+          >
+            <Eye size={13} /> Quick view
+          </button>
+        )}
+
+        {discount > 0 && (
+          <span className="absolute bottom-3 left-3 z-[3] rounded-[4px] bg-wine px-2.5 py-[5px] text-[9px] font-bold uppercase tracking-[0.12em] text-white transition-opacity duration-300 group-hover:opacity-0">
+            {discount}% off
+          </span>
+        )}
+      </div>
+
+      {/* DETAILS */}
+      <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2.5 sm:px-4 sm:pb-4 sm:pt-[15px]">
+        <Link
+          to={`/product/${product.id}`}
+          className="font-display text-[15px] leading-tight text-ink transition-colors duration-300 group-hover:text-wine sm:text-[19px]"
+        >
+          {product.name}
+        </Link>
+        <p className="mt-[3px] text-[10px] leading-snug text-muted sm:text-[11.5px]">{subtitleFor(product)}</p>
+
+        {swatches.length > 0 && (
+          <div className="mt-2 flex items-center gap-1 sm:mt-3 sm:gap-1.5" title="Colours in this saree">
+            {swatches.map((c, i) => (
+              <motion.span
+                key={`${c}-${i}`}
+                initial={{ opacity: 0, scale: 0 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 340, damping: 18, delay: 0.15 + i * 0.07 }}
+                className="h-[13px] w-[13px] rounded-full ring-1 ring-ink/10 transition-transform duration-300 hover:scale-125 sm:h-[17px] sm:w-[17px]"
+                style={{ background: c }}
+              />
+            ))}
+            {extraSwatches > 0 && <span className="ml-0.5 text-[9.5px] text-muted sm:text-[10.5px]">+{extraSwatches}</span>}
+          </div>
+        )}
+
+        {product.description && (
+          <p className="mt-2 line-clamp-2 text-[10px] leading-[1.6] text-muted sm:mt-2.5 sm:text-[11.5px] sm:leading-[1.65]">
+            {product.description}
+          </p>
+        )}
+
+        <div className="mt-auto pt-2.5 sm:pt-3.5">
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-wrap items-baseline gap-x-1.5">
+              <span className="font-display text-[17px] text-ink sm:text-[21px]">{money(product.price)}</span>
+              {discount > 0 && <s className="text-[10px] text-muted sm:text-[11px]">{money(product.mrp)}</s>}
+            </div>
+            {/* The whole card already links through, so this is desktop-only. */}
+            <Link
+              to={`/product/${product.id}`}
+              className="group/link hidden shrink-0 items-center gap-1.5 text-[11.5px] text-muted transition-colors hover:text-wine sm:inline-flex"
+            >
+              View Details
+              <ArrowRight size={12} className="transition-transform duration-300 group-hover/link:translate-x-1" />
+            </Link>
+          </div>
+
+          <button
+            onClick={handleAdd}
+            className="relative mt-2.5 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[6px] bg-ivory py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:mt-3.5 sm:gap-2 sm:py-[11px] sm:text-[10.5px] sm:tracking-[0.18em]"
+          >
+            <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
+            <span className="relative z-[1] flex items-center gap-1.5 sm:gap-2">
+              {added ? <Check size={12} /> : <ShoppingBag size={12} />}
+              {added ? 'Added' : 'Add to Bag'}
+            </span>
+          </button>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+/** Placeholder shown while the catalogue is still loading. */
+export function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[14px] border border-ink/[0.07] bg-paper">
+      <div className="skeleton aspect-[1.06] w-full" />
+      <div className="flex flex-col gap-2.5 px-4 pb-4 pt-4">
+        <div className="skeleton h-4 w-3/4 rounded" />
+        <div className="skeleton h-3 w-1/2 rounded" />
+        <div className="mt-1 flex gap-1.5">
+          {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-[17px] w-[17px] rounded-full" />)}
+        </div>
+        <div className="skeleton mt-1 h-3 w-full rounded" />
+        <div className="skeleton h-3 w-5/6 rounded" />
+        <div className="skeleton mt-1.5 h-5 w-24 rounded" />
+        <div className="skeleton mt-1.5 h-9 w-full rounded-[6px]" />
+      </div>
+    </div>
+  );
+}
