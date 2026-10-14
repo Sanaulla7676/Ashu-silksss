@@ -4,7 +4,18 @@ export const money = n => new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 }).format(Number(n || 0));
 
-export const mediaUrl = p => p?.media?.[0] || '';
+export const mediaUrls = product => {
+  const media = product?.media;
+  if (Array.isArray(media)) {
+    return media.filter(url => typeof url === 'string' && url.trim()).map(url => url.trim());
+  }
+  if (typeof media === 'string') {
+    return media.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+export const mediaUrl = product => mediaUrls(product)[0] || '';
 
 // Sarees photographed on the marble floor are shown on the same warm cream
 // backdrop as the studio shoot of 2026-08-31. Cloudinary cuts the saree out
@@ -23,26 +34,4 @@ export const productImage = url => {
 
 export const discountPercent = (price, mrp) => {
   if (!mrp || mrp <= price) return 0;
-  return Math.round(((mrp - price) / mrp) * 100);
-};
-
-export const slugify = str =>
-  str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
-export const generateOrderId = () => {
-  return 'AS' + Date.now().toString().slice(-8);
-};
-
-// Opens the customer's own UPI app (PhonePe/GPay/Paytm/...) with the amount
-// pre-filled. No gateway involved, so there is no programmatic confirmation
-// that the payment succeeded â€” the caller must get that from the customer.
-export const generateUpiLink = ({ vpa, name, amount, note }) => {
-  const params = new URLSearchParams({
-    pa: vpa,
-    pn: name,
-    am: String(Math.round(amount)),
-    cu: 'INR',
-    tn: note || '',
-  });
-  return `upi://pay?${params.toString()}`;
-};
+  return Math.round(((mrp - price) / mrp) * 100);¶»§q«^
