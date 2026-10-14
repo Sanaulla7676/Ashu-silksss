@@ -4,7 +4,18 @@ export const money = n => new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 }).format(Number(n || 0));
 
-export const mediaUrl = p => p?.media?.[0] || '';
+export const mediaUrls = product => {
+  const media = product?.media;
+  if (Array.isArray(media)) {
+    return media.filter(url => typeof url === 'string' && url.trim()).map(url => url.trim());
+  }
+  if (typeof media === 'string') {
+    return media.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+export const mediaUrl = product => mediaUrls(product)[0] || '';
 
 // Sarees photographed on the marble floor are shown on the same warm cream
 // backdrop as the studio shoot of 2026-08-31. Cloudinary cuts the saree out

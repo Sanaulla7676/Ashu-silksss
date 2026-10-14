@@ -3,7 +3,9 @@ import { db, firebaseReady } from '../firebase';
 
 const productsRef = () => collection(db, 'products');
 export async function getCatalogProducts() {
-  if (!firebaseReady) return [];
+  if (!firebaseReady || !db) {
+    throw new Error('Firebase is not configured. Add the existing project values for VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID and VITE_FIREBASE_APP_ID to Vercel Production, then redeploy.');
+  }
   const snap = await getDocs(query(productsRef(), orderBy('createdAt', 'desc')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }

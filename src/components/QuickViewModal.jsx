@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
-import { money, mediaUrl, discountPercent } from '../utils';
+import { money, mediaUrls, discountPercent } from '../utils';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -33,7 +33,7 @@ export default function QuickViewModal({ product, onClose }) {
 
   const gallery = product && Array.isArray(product.media) && product.media.length
     ? product.media.filter(Boolean)
-    : product ? [mediaUrl(product)] : [];
+    : product ? mediaUrls(product) : [];
   const discount = product ? discountPercent(product.price, product.mrp) : 0;
   const wished = product ? isInWishlist(product.id) : false;
 

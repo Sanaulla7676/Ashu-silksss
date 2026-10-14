@@ -12,7 +12,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { fetchLiveProduct, fetchLiveProducts } from '../services/liveCatalog';
 import { createEnquiry } from '../services/firestore';
 import { generateEnquiryMessage, generateWhatsAppLink } from '../services/whatsapp';
-import { discountPercent, mediaUrl, money } from '../utils';
+import { discountPercent, mediaUrls, money } from '../utils';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -90,7 +90,7 @@ export default function ProductDetail() {
         <div className="container grid grid-cols-1 gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <ProductGallery
-              media={Array.isArray(product.media) ? product.media : [mediaUrl(product)]}
+              media={mediaUrls(product)}
               badge={discount > 0 && (
                 <span className="absolute left-4 top-4 rounded-sm bg-gold px-3 py-2 font-bold text-white">{discount}% OFF</span>
               )}

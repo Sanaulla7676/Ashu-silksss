@@ -14,8 +14,15 @@ async function upload(file, { resourceType, folder }) {
   body.append('folder', folder);
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { method: 'POST', body });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || 'Upload failed.');
+  const contentType = res.headers.get('content-type') || '';
+  let data;
+  if (contentType.includes('application/json')) {
+    data = await res.json();
+  } else {
+    data = { error: { message: await res.text() } };
+  }
+  if (!res.ok) throw new Error(data?.error?.message || `Upload failed (HTTP ${res.status}).`);
+  if (!data?.secure_url) throw new Error('Upload finished without an image URL. Check the Cloudinary upload preset.');
   return data.secure_url;
 }
 

@@ -4,10 +4,12 @@ import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles,
 import toast from 'react-hot-toast';
 import { getCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
 import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
+import { firebaseReady } from '../firebase';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
 import { PHOTO_UPDATES } from '../data/photo-updates';
 import { useCategories } from '../context/CategoryContext';
+import { mediaUrl, mediaUrls } from '../utils';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
@@ -19,6 +21,15 @@ const empty = {
 };
 const blouseOptions = ['Included', 'Not included', 'Running blouse fabric'];
 const patternOptions = ['Checked', 'Striped', 'Zari Woven', 'Floral', 'Solid', 'Printed', 'Embroidered', 'Temple Border'];
+
+function readableAdminError(error) {
+  const message = error?.message || 'An unexpected error occurred.';
+  if (error?.code === 'permission-denied' || /missing or insufficient permissions|permission denied/i.test(message)) {
+    return 'Firestore denied this action. Confirm the signed-in store-owner account has the Firebase custom claim admin=true, then sign out and sign in again. Keep the Firestore security rules restricted.';
+  }
+  return message;
+}
+
 
 function Section({ title, children }) {
   return (
@@ -45,7 +56,7 @@ export default function Admin() {
   const load = async () => {
     setBusy(true); setError('');
     try { setProducts(await getCatalogProducts()); }
-    catch (e) { setError(e.message); }
+    catch (e) { setError(readableAdminError(e)); }
     finally { setBusy(false); }
   };
   useEffect(() => { load(); }, []);
@@ -73,7 +84,7 @@ export default function Admin() {
       for (const file of files) urls.push(await uploadProductImage(file, editing || 'new'));
       setForm(x => ({ ...x, media: [x.media, ...urls].filter(Boolean).join('\n') }));
       if (urls[0]) setPreview(urls[0]);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(readableAdminError(e)); }
     finally { setUploading(false); e.target.value = ''; }
   };
 
@@ -81,7 +92,7 @@ export default function Admin() {
     e.preventDefault();
     setBusy(true); setError('');
     try {
-      const media = form.media.split(/\n|,/).map(x => x.trim()).filter(Boolean);
+      const media = form.media.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
       const highlights = form.highlights.split('\n').map(x => x.trim()).filter(Boolean);
       const tags = form.tags.split(',').map(x => x.trim()).filter(Boolean);
       const data = {
@@ -94,13 +105,13 @@ export default function Admin() {
       toast.success(editing ? 'Product updated' : 'Product added');
       setForm(empty); setEditing(null); setPreview('');
       await load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(readableAdminError(e)); }
     finally { setBusy(false); }
   };
 
   const edit = p => {
     setEditing(p.id);
-    const media = Array.isArray(p.media) ? p.media.join('\n') : (p.media || '');
+    const media = mediaUrls(p).join('\n');
     const highlights = Array.isArray(p.highlights) ? p.highlights.join('\n') : (p.highlights || '');
     const tags = Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || '');
     setForm({
@@ -108,7 +119,7 @@ export default function Admin() {
       price: String(p.price ?? ''), mrp: String(p.mrp ?? ''), stock: String(p.stock ?? '0'),
       gstPercent: String(p.gstPercent ?? '5'), weight: String(p.weight ?? ''),
     });
-    setPreview(Array.isArray(p.media) ? p.media[0] : (p.media || ''));
+    setPreview(mediaUrl(p));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -116,7 +127,7 @@ export default function Admin() {
     if (!confirm('Delete this product?')) return;
     setBusy(true);
     try { await deleteCatalogProduct(id); toast.success('Product deleted'); await load(); }
-    catch (e) { setError(e.message); }
+    catch (e) { setError(readableAdminError(e)); }
     finally { setBusy(false); }
   };
 
@@ -147,7 +158,7 @@ export default function Admin() {
       toast.success(`${done} product${done === 1 ? '' : 's'} updated`);
       await load();
     } catch (e) {
-      setError(`Stopped after ${done} update(s): ${e.message}`);
+      setError(`Stopped after ${done} update(s): ${readableAdminError(e)}`);
     } finally { setBusy(false); }
   };
 
@@ -198,7 +209,7 @@ export default function Admin() {
   // Sarees already in the catalogue that were photographed again: they gain the
   // new photographs after the ones they already have, and move category when the
   // entry names one.
-  const mediaOf = p => (Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []));
+  const mediaOf = mediaUrls;
   const pendingPhotos = PHOTO_UPDATES.filter(update => {
     const product = products.find(p => p.id === update.id);
     if (!product) return false;
@@ -225,12 +236,12 @@ export default function Admin() {
       toast.success(`${done} saree${done === 1 ? '' : 's'} updated`);
       await load();
     } catch (e) {
-      setError(`Stopped after ${done} update(s): ${e.message}`);
+      setError(`Stopped after ${done} update(s): ${readableAdminError(e)}`);
     } finally { setBusy(false); }
   };
 
   const draftProducts = products.filter(p => (p.status || 'active') === 'draft');
-  const photoCount = p => (Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0));
+  const photoCount = p => mediaUrls(p).length;
   // A product still needs a photo, a price and stock to be worth showing.
   const incompleteDrafts = draftProducts.filter(
     p => !photoCount(p) || !Number(p.price) || Number(p.stock ?? 0) <= 0,
@@ -248,7 +259,7 @@ export default function Admin() {
       toast.success(`${done} product${done === 1 ? '' : 's'} set to Active`);
       await load();
     } catch (e) {
-      setError(`Stopped after ${done} update(s): ${e.message}`);
+      setError(`Stopped after ${done} update(s): ${readableAdminError(e)}`);
     } finally { setBusy(false); }
   };
 
@@ -267,6 +278,12 @@ export default function Admin() {
 
   return (
     <div>
+      {!firebaseReady && (
+        <div role="alert" className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-bold">Product management is unavailable because Firebase is not configured.</p>
+          <p className="mt-1">Restore the existing Firebase production values in Vercel and redeploy. Product reads and writes will fail until then; existing catalogue data has not been changed.</p>
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900">Products</h1>
@@ -437,7 +454,7 @@ export default function Admin() {
 
           <div className="flex flex-wrap gap-2.5">
             <button type="button" className="dash-btn-ghost" onClick={clear}><X size={16} /> Clear</button>
-            <button className="dash-btn-primary" disabled={busy || uploading}>
+            <button className="dash-btn-primary" disabled={busy || uploading || !firebaseReady}>
               {editing ? <Save size={16} /> : <Plus size={16} />} {editing ? 'Save changes' : 'Add product'}
             </button>
           </div>
@@ -453,8 +470,8 @@ export default function Admin() {
           {products.map(p => (
             <article className="flex flex-col items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between" key={p.id}>
               <div className="flex items-center gap-3">
-                {(Array.isArray(p.media) ? p.media[0] : p.media) && (
-                  <img className="h-14 w-14 rounded-lg object-cover" src={Array.isArray(p.media) ? p.media[0] : p.media} alt="" />
+                {mediaUrl(p) && (
+                  <img className="h-14 w-14 rounded-lg object-cover" src={mediaUrl(p)} alt="" />
                 )}
                 <div className="grid gap-0.5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -467,7 +484,7 @@ export default function Admin() {
                     )}
                   </div>
                   <span className="text-sm text-slate-500">{p.sku || 'no SKU'} · {p.category}</span>
-                  <span className="text-sm text-slate-500">₹{p.price || 0} · {(Array.isArray(p.media) ? p.media.length : (p.media ? 1 : 0))} photo(s)</span>
+                  <span className="text-sm text-slate-500">₹{p.price || 0} · {mediaUrls(p).length} photo(s)</span>
                   <div className="mt-1 flex items-center gap-1.5">
                     <label className="text-xs font-semibold text-slate-500">Stock</label>
                     <input

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, ArrowRight, Check, Eye } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -7,7 +7,7 @@ import ProductMedia from './ProductMedia';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
 import { useImagePalette } from '../hooks/useImagePalette';
-import { money, mediaUrl, discountPercent, productImage } from '../utils';
+import { money, mediaUrl, mediaUrls, discountPercent, productImage } from '../utils';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -38,9 +38,12 @@ function subtitleFor(product) {
 /** Fades a photo in once it has actually decoded, so nothing pops. */
 function FadeImage({ url, className = '' }) {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url || '') || (url || '').includes('/video/upload/');
 
-  if (!url || isVideo) return <ProductMedia url={url} className={className} />;
+  useEffect(() => { setLoaded(false); setFailed(false); }, [url]);
+
+  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} />;
 
   return (
     <img
@@ -49,6 +52,7 @@ function FadeImage({ url, className = '' }) {
       loading="lazy"
       decoding="async"
       onLoad={() => setLoaded(true)}
+      onError={() => setFailed(true)}
       className={`h-full w-full object-cover transition-[opacity,filter] duration-700 ease-out ${
         loaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'
       } ${className}`}
@@ -61,7 +65,7 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
   const { addToWishlist, isInWishlist } = useWishlist();
   const wished = isInWishlist(product.id);
 
-  const gallery = Array.isArray(product.media) ? product.media.filter(Boolean) : [];
+  const gallery = mediaUrls(product);
   const image = mediaUrl(product);
   const altImage = gallery[1] || '';
   const palette = useImagePalette(image);

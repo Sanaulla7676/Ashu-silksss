@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ChevronRight, ChevronDown, Heart, ShoppingBag, X, SlidersHorizontal,
-  Leaf, Truck, ShieldCheck, PackageCheck, Headphones,
+  Leaf, Truck, ShieldCheck, PackageCheck, Headphones, ImageOff,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -12,7 +12,7 @@ import Pagination from '../components/Pagination';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
-import { money, mediaUrl, discountPercent, productImage } from '../utils';
+import { money, mediaUrl, mediaUrls, discountPercent, productImage } from '../utils';
 
 const PAGE_SIZE = 12;
 const EASE = [0.22, 1, 0.36, 1];
@@ -157,9 +157,10 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
   const { addToWishlist, isInWishlist } = useWishlist();
   const [hovered, setHovered] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const wished = isInWishlist(product.id);
   const badges = badgeFor(product, newIds);
-  const images = (Array.isArray(product.media) ? product.media : [mediaUrl(product)]).map(productImage);
+  const images = mediaUrls(product).map(productImage);
   const secondImage = images[1];
 
   return (
@@ -174,11 +175,18 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-ivory">
         <Link to={`/product/${product.id}`} aria-label={product.name}>
+          {(imageFailed || !images[0]) && (
+            <div role="img" aria-label={`${product.name}: image unavailable`} className="absolute inset-0 z-[5] grid place-content-center gap-2 bg-ivory text-muted">
+              <ImageOff size={28} className="mx-auto" />
+              <span className="text-xs">Image unavailable</span>
+            </div>
+          )}
           <motion.img
             src={images[0]}
             alt=""
             loading="lazy"
             onLoad={() => setLoaded(true)}
+            onError={() => { setImageFailed(true); setLoaded(true); }}
             animate={{ scale: hovered ? 1.045 : 1, opacity: !loaded ? 0 : (secondImage && hovered ? 0 : 1) }}
             transition={{ duration: 0.4, ease: EASE }}
             className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${product.priceOnRequest ? 'mix-blend-multiply' : ''} ${loaded ? 'blur-0' : 'blur-md'}`}
@@ -188,6 +196,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
               src={secondImage}
               alt=""
               loading="lazy"
+              onError={() => setImageFailed(true)}
               animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1.045 : 1 }}
               transition={{ duration: 0.4, ease: EASE }}
               className={`absolute inset-0 h-full w-full object-cover ${product.priceOnRequest ? 'mix-blend-multiply' : ''}`}
