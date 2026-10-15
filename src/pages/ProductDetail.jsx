@@ -163,7 +163,7 @@ export default function ProductDetail() {
               ))}
             </div>
             <div className="mt-5 flex items-center gap-2 rounded bg-success-bg p-3.5 font-extrabold text-success">
-              <CheckCircle size={18} /> {product.stock} pieces available in store
+              <CheckCircle size={18} /> {product.stockOnRequest ? 'Availability confirmed on enquiry' : `${product.stock} pieces available in store`}
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {!product.priceOnRequest && (
