@@ -22,7 +22,7 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
       const q = search.toLowerCase();
       result = result.filter(p => [p.name,p.category,p.description,p.colour,p.fabric,p.occasion,p.sku].some(v => String(v || '').toLowerCase().includes(q)));
     }
-    result = result.filter(p => Number(p.stock ?? 0) > 0);
+    result = result.filter(p => Number(p.stock ?? 0) > 0 || p.stockOnRequest);
     if (sort === 'price-low') result.sort((a,b) => Number(a.price)-Number(b.price));
     else if (sort === 'price-high') result.sort((a,b) => Number(b.price)-Number(a.price));
     else if (sort === 'newest') result.sort((a,b) => (b.createdAt?.seconds || b.createdAt || 0) - (a.createdAt?.seconds || a.createdAt || 0));
@@ -30,8 +30,12 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
     return result;
   }, [catalog, category, search, sort]);
 
-  const categories = useMemo(() => ['All', ...new Set(catalog.map(p => p.category).filter(Boolean))], [catalog]);
-  const inStock = useMemo(() => catalog.filter(p => Number(p.stock ?? 0) > 0), [catalog]);
+  const categories = useMemo(() => {
+    const list = [...new Set(catalog.map(p => p.category).filter(Boolean))];
+    list.sort((a, b) => Number(b === 'New Arrivals') - Number(a === 'New Arrivals'));
+    return ['All', ...list];
+  }, [catalog]);
+  const inStock = useMemo(() => catalog.filter(p => Number(p.stock ?? 0) > 0 || p.stockOnRequest), [catalog]);
   const featuredProducts = useMemo(() => {
     const marked = inStock.filter(p => p.featured);
     return (marked.length ? marked : inStock).slice(0, 8);
