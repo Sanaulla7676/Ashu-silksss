@@ -383,7 +383,7 @@ export default function Products() {
     if (pattern) result = result.filter(p => p.pattern === pattern);
     if (availability === 'in') result = result.filter(p => !p.stockOnRequest && Number(p.stock ?? 0) > 2);
     else if (availability === 'low') result = result.filter(p => !p.stockOnRequest && Number(p.stock ?? 0) > 0 && Number(p.stock ?? 0) <= 2);
-    else result = result.filter(p => Number(p.stock ?? 0) > 0);
+    else result = result.filter(p => Number(p.stock ?? 0) > 0 || p.stockOnRequest);
 
     if (sort === 'price-low') result = [...result].sort((a, b) => Number(a.price) - Number(b.price));
     else if (sort === 'price-high') result = [...result].sort((a, b) => Number(b.price) - Number(a.price));
