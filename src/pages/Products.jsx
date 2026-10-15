@@ -381,8 +381,8 @@ export default function Products() {
     if (fabric) result = result.filter(p => p.fabric === fabric);
     if (workType) result = result.filter(p => p.workType === workType);
     if (pattern) result = result.filter(p => p.pattern === pattern);
-    if (availability === 'in') result = result.filter(p => Number(p.stock ?? 0) > 2);
-    else if (availability === 'low') result = result.filter(p => Number(p.stock ?? 0) > 0 && Number(p.stock ?? 0) <= 2);
+    if (availability === 'in') result = result.filter(p => !p.stockOnRequest && Number(p.stock ?? 0) > 2);
+    else if (availability === 'low') result = result.filter(p => !p.stockOnRequest && Number(p.stock ?? 0) > 0 && Number(p.stock ?? 0) <= 2);
     else result = result.filter(p => Number(p.stock ?? 0) > 0);
 
     if (sort === 'price-low') result = [...result].sort((a, b) => Number(a.price) - Number(b.price));
