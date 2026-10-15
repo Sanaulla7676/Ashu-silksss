@@ -184,7 +184,7 @@ export default function Home() {
   const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
   // The landing page shows the whole in-stock catalogue, featured ones first.
   const featuredIds = new Set(featuredProducts.map(p => p.id));
-  const inStock = allProducts.filter(p => Number(p.stock ?? 0) > 0);
+  const inStock = allProducts.filter(p => Number(p.stock ?? 0) > 0 || p.stockOnRequest);
   const orderedProducts = [
     ...inStock.filter(p => featuredIds.has(p.id)),
     ...inStock.filter(p => !featuredIds.has(p.id)),
