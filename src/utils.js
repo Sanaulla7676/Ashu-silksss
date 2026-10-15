@@ -24,7 +24,7 @@ export const mediaUrl = product => mediaUrls(product)[0] || '';
 // studio keep their own backdrop — cutting them out would remove the props
 // styled beside the saree.
 const STUDIO_BACKDROP = 'c_limit,w_1200/e_background_removal/b_rgb:f9e6cb/q_auto';
-const ALREADY_ON_CREAM = /\/ashu-silks\/products\/(import-2026-08-31|studio-)/;
+const ALREADY_ON_CREAM = /\/ashu-silks\/products\/(import-\d{4}-\d{2}-\d{2}|studio-)/;
 
 export const productImage = url => {
   if (!url || !/\/image\/upload\/v\d+\/ashu-silks\/products\//.test(url)) return url;
