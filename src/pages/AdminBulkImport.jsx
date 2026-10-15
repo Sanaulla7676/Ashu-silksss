@@ -5,6 +5,7 @@ import { firebaseReady } from '../firebase';
 import { createCatalogProduct, getCatalogProducts, updateCatalogProduct } from '../services/catalog';
 import { cloudinaryReady, uploadProductImage } from '../services/cloudinary';
 import { mediaUrls } from '../utils';
+import { VISUAL_PRODUCT_DETAILS } from '../data/product-names-2026-10-15';
 
 const BATCH = 'import-2026-10-15';
 const IMAGE_PATH = /(?:^|\/)Products\/(Product_\d{3})\/([^/]+\.(?:jpe?g|png|webp|avif))$/i;
@@ -139,8 +140,9 @@ export default function AdminBulkImport() {
 
         const number = String(Number(group.id.replace('Product_', ''))).padStart(3, '0');
         const sku = skuFor(group.id);
+        const visual = VISUAL_PRODUCT_DETAILS[group.id] || { name: 'Ashu Silks Saree ' + number, colour: '' };
         const productData = {
-          name: 'Ashu Silks Saree ' + number,
+          name: visual.name,
           brand: 'Ashu Silks',
           category: 'New Arrivals',
           sku,
@@ -151,7 +153,7 @@ export default function AdminBulkImport() {
           stock: 5,
           stockOnRequest: true,
           gstPercent: 5,
-          colour: '',
+          colour: visual.colour,
           fabric: '',
           pattern: '',
           occasion: '',
@@ -159,8 +161,8 @@ export default function AdminBulkImport() {
           blousePiece: '',
           sareeLength: '',
           washCare: '',
-          description: 'A saree from the latest Ashu Silks photo collection. The supplied product index contains product IDs but no verified design names, fabric details or prices. Contact the store to confirm specifications, price and current availability.',
-          highlights: ['New arrival from Ashu Silks', 'Price available on request', 'Contact the store to confirm details and availability'],
+          description: visual.name + '. The product name and colour are visual descriptions based on the supplied photo. The archive does not verify fibre content, weave technique, zari composition, dimensions or price. Please confirm these details and current availability with Ashu Silks before purchase.',
+          highlights: ['New arrival from Ashu Silks', 'Visual colour and style description', 'Price and product specifications confirmed on enquiry'],
           tags: ['new arrival', 'saree', BATCH, group.id.toLowerCase()],
           media: urls,
           featured: false,
@@ -218,9 +220,9 @@ export default function AdminBulkImport() {
       <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <AlertTriangle size={19} className="mt-0.5 shrink-0" />
         <div>
-          <b>Names and prices need a quick reality check.</b>
+          <b>Names are photo-based descriptions, not factory catalogue data.</b>
           <p className="mt-1 leading-5">
-            The ZIP's index contains IDs such as Product_001, not descriptive product names or prices. Imported titles will be editable placeholders (“Ashu Silks Saree 001”), and prices will remain “Price on request” rather than inventing values. Fabric, colour and stock details are left for the store to confirm.
+            The ZIP uses IDs such as Product_001 instead of supplied product names or prices. Descriptive names and colour labels have been prepared from the visible photos to make the storefront easier to browse. They do not certify fibre content, weaving technique or zari composition. Prices remain “Price on request”; confirm each product’s exact specifications and stock before taking orders.
           </p>
         </div>
       </div>
