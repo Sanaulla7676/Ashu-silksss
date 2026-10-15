@@ -13,7 +13,7 @@ import { mediaUrl, mediaUrls } from '../utils';
 
 const empty = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
-  price: '', mrp: '', gstPercent: '5', stock: '',
+  price: '', mrp: '', gstPercent: '5', stock: '', stockOnRequest: false,
   colour: '', fabric: '', pattern: '', occasion: '', workType: '', blousePiece: 'Included',
   sareeLength: '6.3 metres with blouse piece', washCare: 'Dry clean only', countryOfOrigin: 'India', weight: '',
   description: '', highlights: '', tags: '',
@@ -269,7 +269,7 @@ export default function Admin() {
     const value = Number(stockDrafts[p.id]);
     if (Number.isNaN(value) || value < 0) { toast.error('Enter a valid stock number'); return; }
     try {
-      await updateCatalogProduct(p.id, { stock: value });
+      await updateCatalogProduct(p.id, { stock: value, stockOnRequest: false });
       toast.success(`${p.name || 'Product'} stock updated`);
       setStockDrafts(d => { const next = { ...d }; delete next[p.id]; return next; });
       await load();
@@ -287,7 +287,7 @@ export default function Admin() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900">Products</h1>
-          <p className="text-sm text-slate-500">Manage catalogue, stock, pricing and images. New products publish live immediately — a product also needs Stock above 0 to actually show on the site.</p>
+          <p className="text-sm text-slate-500">Manage catalogue, stock, pricing and images. Active products appear when they have stock above 0 or availability is set to on enquiry.</p>
         </div>
         <button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button>
       </div>
@@ -401,6 +401,18 @@ export default function Admin() {
               <input className="dash-field" type="number" min="0" step="0.1" placeholder="GST %" value={form.gstPercent} onChange={e => set('gstPercent', e.target.value)} />
               <input className="dash-field" required type="number" min="0" step="1" placeholder="Stock quantity" value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+              <input
+                type="checkbox"
+                checked={Boolean(form.stockOnRequest)}
+                onChange={e => set('stockOnRequest', e.target.checked)}
+                className="mt-1 h-4 w-4 accent-indigo-600"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">Availability on enquiry</span>
+                <span className="mt-0.5 block text-xs leading-5 text-slate-500">Use when the exact available quantity is not confirmed. The product can be listed without displaying a made-up stock count.</span>
+              </span>
+            </label>
           </Section>
 
           <Section title="Saree details">
