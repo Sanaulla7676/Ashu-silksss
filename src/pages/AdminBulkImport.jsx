@@ -150,7 +150,7 @@ export default function AdminBulkImport() {
           price: 0,
           mrp: 0,
           priceOnRequest: true,
-          stock: 5,
+          stock: 0,
           stockOnRequest: true,
           gstPercent: 5,
           colour: visual.colour,
