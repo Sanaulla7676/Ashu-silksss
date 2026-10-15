@@ -12,6 +12,7 @@ const NAV = [
   { to: '/admin/products', label: 'Products', icon: Package },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree },
   { to: '/admin/import', label: 'Import Photos', icon: ImportIcon },
+  { to: '/admin/bulk-import', label: 'Bulk Import', icon: ImportIcon },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
   { to: '/admin/hero', label: 'Hero Content', icon: ImageIcon },
   { to: '/admin/theme', label: 'Theme & Design', icon: Palette },
