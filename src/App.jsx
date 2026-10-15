@@ -29,6 +29,7 @@ const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 const AdminHero = lazy(() => import('./pages/AdminHero'));
 const AdminTeam = lazy(() => import('./pages/AdminTeam'));
 const AdminImport = lazy(() => import('./pages/AdminImport'));
+const AdminBulkImport = lazy(() => import('./pages/AdminBulkImport'));
 const AdminCategories = lazy(() => import('./pages/AdminCategories'));
 
 function PageFallback() {
@@ -117,6 +118,7 @@ export default function App() {
                   <Route index element={<AdminOverview />} />
                   <Route path="products" element={<Admin />} />
                   <Route path="import" element={<AdminImport />} />
+                  <Route path="bulk-import" element={<AdminBulkImport />} />
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="theme" element={<AdminTheme />} />
