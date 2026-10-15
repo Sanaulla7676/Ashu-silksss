@@ -30,7 +30,7 @@ export default function ProductDetail() {
     Promise.all([fetchLiveProduct(id), fetchLiveProducts()]).then(([found, all]) => {
       if (!active) return;
       setProduct(found);
-      setRelated(found ? all.filter(p => p.id !== found.id && p.category === found.category && Number(p.stock ?? 0) > 0).slice(0, 4) : []);
+      setRelated(found ? all.filter(p => p.id !== found.id && p.category === found.category && (Number(p.stock ?? 0) > 0 || p.stockOnRequest)).slice(0, 4) : []);
     }).finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [id]);
