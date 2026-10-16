@@ -91,6 +91,8 @@ export default function ProductDetail() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <ProductGallery
               media={mediaUrls(product)}
+              productName={product.name}
+              colour={product.colour}
               badge={discount > 0 && (
                 <span className="absolute left-4 top-4 rounded-sm bg-gold px-3 py-2 font-bold text-white">{discount}% OFF</span>
               )}

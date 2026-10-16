@@ -3,7 +3,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductMedia from './ProductMedia';
 
-export default function ProductGallery({ media = [], badge }) {
+export default function ProductGallery({ media = [], badge, productName = '', colour = '' }) {
   const images = media.length ? media : [''];
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: images.length > 1 });
   const [selected, setSelected] = useState(0);
@@ -27,7 +27,7 @@ export default function ProductGallery({ media = [], badge }) {
             {images.map((url, i) => (
               <div className="min-w-0 flex-[0_0_100%]" key={i}>
                 <div className="aspect-[3/4] w-full">
-                  <ProductMedia url={url} />
+                  <ProductMedia url={url} productName={productName} colour={colour} />
                 </div>
               </div>
             ))}

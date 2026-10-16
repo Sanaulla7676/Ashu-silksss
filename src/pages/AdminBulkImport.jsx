@@ -6,6 +6,7 @@ import { createCatalogProduct, getCatalogProducts, updateCatalogProduct } from '
 import { cloudinaryReady, uploadProductImage } from '../services/cloudinary';
 import { mediaUrls } from '../utils';
 import { VISUAL_PRODUCT_DETAILS } from '../data/product-names-2026-10-15';
+import { visualCategoryFor } from '../data/static-import-products';
 
 const BATCH = 'import-2026-10-15';
 const IMAGE_PATH = /(?:^|\/)Products\/(Product_\d{3})\/([^/]+\.(?:jpe?g|png|webp|avif))$/i;
@@ -144,7 +145,8 @@ export default function AdminBulkImport() {
         const productData = {
           name: visual.name,
           brand: 'Ashu Silks',
-          category: 'New Arrivals',
+          category: visualCategoryFor(visual.name),
+          collection: 'New Arrivals',
           sku,
           status: 'active',
           price: 0,

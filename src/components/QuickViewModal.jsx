@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, ShoppingBag, Heart, ArrowRight, Check } from 'lucide-react';
+import { X, ShoppingBag, Heart, ArrowRight, Check, MessageCircle } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
@@ -90,7 +90,7 @@ export default function QuickViewModal({ product, onClose }) {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.45, ease: EASE }}
                     >
-                      <ProductMedia url={gallery[active]} />
+                      <ProductMedia url={gallery[active]} productName={product.name} colour={product.colour} />
                     </motion.div>
                   </AnimatePresence>
                   {discount > 0 && (
@@ -111,7 +111,7 @@ export default function QuickViewModal({ product, onClose }) {
                           i === active ? 'ring-2 ring-wine ring-offset-1' : 'opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <ProductMedia url={url} />
+                        <ProductMedia url={url} productName={product.name} colour={product.colour} />
                       </button>
                     ))}
                   </div>
@@ -124,8 +124,8 @@ export default function QuickViewModal({ product, onClose }) {
                 <h3 className="mt-2 font-display text-[27px] leading-tight text-ink">{product.name}</h3>
 
                 <div className="mt-3 flex items-baseline gap-2.5">
-                  <span className="font-display text-[26px] text-ink">{money(product.price)}</span>
-                  {discount > 0 && <s className="text-[13px] text-muted">{money(product.mrp)}</s>}
+                  <span className="font-display text-[26px] text-ink">{product.priceOnRequest ? 'Price on request' : money(product.price)}</span>
+                  {!product.priceOnRequest && discount > 0 && <s className="text-[13px] text-muted">{money(product.mrp)}</s>}
                 </div>
 
                 {product.description && (
@@ -143,27 +143,26 @@ export default function QuickViewModal({ product, onClose }) {
                   </dl>
                 )}
 
-                {Number(product.stock ?? 0) > 0 ? (
-                  <p className="mt-4 text-[12px] font-medium text-success">
-                    {product.stock} in stock
-                  </p>
+                {product.stockOnRequest ? (
+                  <p className="mt-4 text-[12px] font-medium text-muted">Availability confirmed on enquiry</p>
+                ) : Number(product.stock ?? 0) > 0 ? (
+                  <p className="mt-4 text-[12px] font-medium text-success">{product.stock} in stock</p>
                 ) : (
                   <p className="mt-4 text-[12px] font-medium text-muted">Currently unavailable</p>
                 )}
 
                 <div className="mt-auto flex flex-col gap-2.5 pt-5">
-                  <button
-                    onClick={() => {
-                      addToCart(product);
-                      setAdded(true);
-                      setTimeout(() => setAdded(false), 1600);
-                      toast.success(`${product.name} added to bag`);
-                    }}
-                    className="as-shine flex items-center justify-center gap-2 rounded-[6px] bg-wine py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110"
-                  >
-                    {added ? <Check size={14} /> : <ShoppingBag size={14} />}
-                    {added ? 'Added to bag' : 'Add to Bag'}
-                  </button>
+                  {product.priceOnRequest ? (
+                    <Link to={`/product/${product.id}`} onClick={onClose} className="as-shine flex items-center justify-center gap-2 rounded-[6px] bg-wine py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110">
+                      <MessageCircle size={14} /> Enquire for Price
+                    </Link>
+                  ) : (
+                    <button onClick={() => { addToCart(product); setAdded(true); setTimeout(() => setAdded(false), 1600); toast.success(`${product.name} added to bag`); }}
+                      className="as-shine flex items-center justify-center gap-2 rounded-[6px] bg-wine py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110">
+                      {added ? <Check size={14} /> : <ShoppingBag size={14} />}
+                      {added ? 'Added to bag' : 'Add to Bag'}
+                    </button>
+                  )}
 
                   <div className="flex gap-2.5">
                     <button

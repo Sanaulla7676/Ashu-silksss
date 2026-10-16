@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, BadgeCheck, Truck } from 'lucide-react';
+import { Heart, ShoppingBag, Star, BadgeCheck, Truck, MessageCircle } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
@@ -53,7 +53,7 @@ export default function ProductCard({ product }) {
       <Link to={`/product/${product.id}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-ivory">
           <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.04]">
-            <ProductMedia url={mediaUrl(product)} />
+            <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} />
           </div>
           <motion.div
             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -69,7 +69,7 @@ export default function ProductCard({ product }) {
           >
             <Heart size={16} fill={wished ? 'var(--color-gold)' : 'none'} stroke={wished ? 'var(--color-gold)' : 'currentColor'} />
           </button>
-          {product.stock <= 2 && (
+          {!product.stockOnRequest && Number(product.stock ?? 0) > 0 && product.stock <= 2 && (
             <span className="absolute bottom-2 left-2 z-[2] rounded-sm bg-danger/90 px-1.5 py-0.5 text-[0.66rem] font-bold text-white">Only {product.stock} left</span>
           )}
         </div>
@@ -85,9 +85,9 @@ export default function ProductCard({ product }) {
           </div>
 
           <div className="mt-1.5 flex flex-wrap items-baseline gap-1.5">
-            <b className="text-[1.05rem] font-bold text-ink">{money(product.price)}</b>
-            {product.mrp && <s className="text-[0.8rem] text-muted">{money(product.mrp)}</s>}
-            {discount > 0 && <span className="text-[0.8rem] font-semibold text-success">{discount}% off</span>}
+            <b className="text-[1.05rem] font-bold text-ink">{product.priceOnRequest ? 'Price on request' : money(product.price)}</b>
+            {!product.priceOnRequest && product.mrp > product.price && <s className="text-[0.8rem] text-muted">{money(product.mrp)}</s>}
+            {!product.priceOnRequest && discount > 0 && <span className="text-[0.8rem] font-semibold text-success">{discount}% off</span>}
           </div>
 
           {product.featured && (
@@ -102,9 +102,15 @@ export default function ProductCard({ product }) {
       </Link>
 
       <div className="px-3 pb-3">
-        <button className="btn-primary w-full py-2! text-[0.78rem]!" onClick={handleAdd}>
-          <ShoppingBag size={14} /> Add to cart
-        </button>
+        {product.priceOnRequest ? (
+          <Link to={`/product/${product.id}`} className="btn-primary w-full py-2! text-[0.78rem]!">
+            <MessageCircle size={14} /> Enquire for price
+          </Link>
+        ) : (
+          <button className="btn-primary w-full py-2! text-[0.78rem]!" onClick={handleAdd}>
+            <ShoppingBag size={14} /> Add to cart
+          </button>
+        )}
       </div>
     </motion.article>
   );
