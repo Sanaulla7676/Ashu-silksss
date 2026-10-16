@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { productImage } from '../utils';
 
+const PRODUCT_ATLAS = 'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/1b9766a9-a7c8-48fa-9957-bad562e8f40a.webp';
+const ATLAS_COLUMNS = 10;
+const ATLAS_ROWS = 12;
+
 const TONES = [
   { match: /red|crimson|ruby|scarlet|vermilion|burgundy|maroon|wine|rust|coral|orange|saffron|copper/i, light: '#a34b57', dark: '#2c111b' },
   { match: /pink|fuchsia|magenta|rose|rani|blush|peach/i, light: '#b86b83', dark: '#321722' },
@@ -11,13 +15,43 @@ const TONES = [
   { match: /gold|mustard|yellow|beige|ivory|cream/i, light: '#a88d54', dark: '#2b2113' },
   { match: /black|charcoal|grey|gray|midnight/i, light: '#6f6670', dark: '#151318' },
 ];
+
 function toneFor(colour) {
   return TONES.find(t => t.match.test(colour || '')) || { light: '#96616a', dark: '#24151b' };
 }
-export default function ProductMedia({ url, className = '', productName = '', colour = '' }) {
+
+function isValidImageIndex(imageIndex) {
+  return Number.isInteger(Number(imageIndex)) && Number(imageIndex) >= 0 && Number(imageIndex) < 118;
+}
+
+function atlasStyle(imageIndex) {
+  const index = Number(imageIndex);
+  const column = index % ATLAS_COLUMNS;
+  const row = Math.floor(index / ATLAS_COLUMNS);
+  return {
+    backgroundImage: `url("${PRODUCT_ATLAS}")`,
+    backgroundSize: `${ATLAS_COLUMNS * 100}% ${ATLAS_ROWS * 100}%`,
+    backgroundPosition: `${(column / (ATLAS_COLUMNS - 1)) * 100}% ${(row / (ATLAS_ROWS - 1)) * 100}%`,
+    backgroundRepeat: 'no-repeat',
+  };
+}
+
+export default function ProductMedia({ url, className = '', productName = '', colour = '', imageIndex }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [url]);
+
   if (!url || failed) {
+    if (isValidImageIndex(imageIndex)) {
+      return (
+        <div
+          role="img"
+          aria-label={`${productName || 'Ashu Silks product'} photo`}
+          className={`h-full w-full bg-center bg-no-repeat ${className}`}
+          style={atlasStyle(imageIndex)}
+        />
+      );
+    }
+
     const tone = toneFor(colour);
     const title = String(productName || 'New arrival').replace(/\s+saree$/i, '');
     return (
@@ -36,6 +70,7 @@ export default function ProductMedia({ url, className = '', productName = '', co
       </div>
     );
   }
+
   const video = /\.(mp4|webm|mov)(\?|$)/i.test(url) || url.includes('/video/upload/');
   const base = `h-full w-full object-cover ${className}`;
   if (video) return <video className={base} src={url} muted playsInline loop autoPlay onError={() => setFailed(true)} />;

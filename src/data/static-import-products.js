@@ -51,6 +51,8 @@ export const STATIC_IMPORT_PRODUCTS = Object.entries(VISUAL_PRODUCT_DETAILS).map
     highlights: ['Visual colour: ' + visual.colour, 'Visual style: ' + pattern, 'Price and availability confirmed on enquiry'],
     tags: ['new arrival', 'saree', category.toLowerCase(), visual.colour.toLowerCase(), pattern.toLowerCase(), BATCH, sourceProductId.toLowerCase()],
     media: [], featured: false,
+    // Zero-based tile aligned with Product_001 through Product_118 in the atlas.
+    imageIndex: Number(number) - 1,
     createdAt: Date.parse('2026-10-15T00:00:00.000Z') - Number(number) * 1000,
     sourceBatch: BATCH, sourceProductId, imagePending: true,
   };

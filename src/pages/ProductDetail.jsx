@@ -93,6 +93,7 @@ export default function ProductDetail() {
               media={mediaUrls(product)}
               productName={product.name}
               colour={product.colour}
+              imageIndex={product.imageIndex}
               badge={discount > 0 && (
                 <span className="absolute left-4 top-4 rounded-sm bg-gold px-3 py-2 font-bold text-white">{discount}% OFF</span>
               )}
