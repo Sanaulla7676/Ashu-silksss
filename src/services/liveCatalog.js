@@ -3,6 +3,7 @@ import { db, firebaseReady } from '../firebase';
 import { LATEST_PHOTO_PRODUCTS } from '../data/latest-photo-drop';
 import { STATIC_IMPORT_PRODUCTS } from '../data/static-import-products';
 
+// Storefront catalogue includes the current 118-photo atlas fallback until Cloudinary sync is complete.
 export async function fetchLiveProducts() {
   let live = [];
   // Firestore records override the static fallback by SKU; a read failure must
