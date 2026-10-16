@@ -17,7 +17,7 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
 
   const products = useMemo(() => {
     let result = [...catalog];
-    if (category && category !== 'All') result = result.filter(p => p.category === category);
+    if (category && category !== 'All') result = result.filter(p => p.category === category || p.collection === category);
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(p => [p.name,p.category,p.description,p.colour,p.fabric,p.occasion,p.sku].some(v => String(v || '').toLowerCase().includes(q)));
@@ -31,7 +31,7 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
   }, [catalog, category, search, sort]);
 
   const categories = useMemo(() => {
-    const list = [...new Set(catalog.map(p => p.category).filter(Boolean))];
+    const list = [...new Set([...catalog.map(p => p.category), ...catalog.map(p => p.collection)].filter(Boolean))];
     list.sort((a, b) => Number(b === 'New Arrivals') - Number(a === 'New Arrivals'));
     return ['All', ...list];
   }, [catalog]);

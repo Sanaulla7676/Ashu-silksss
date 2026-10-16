@@ -3,10 +3,13 @@ import { db, firebaseReady } from '../firebase';
 
 // The categories the shop started with, used until the owner saves their own.
 export const FALLBACK_CATEGORIES = [
+  'New Arrivals',
+  'Festive Wear',
+  'Designer',
+  'Traditional Sarees',
   'Kanjeevaram Silk',
   'Mysore Silk',
   'Bridal',
-  'Designer',
   'Cotton',
   'Handloom Cotton Ilkal',
   'Tissue Silk',

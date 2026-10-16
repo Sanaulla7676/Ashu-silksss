@@ -3,6 +3,12 @@ import { FALLBACK_CATEGORIES, getCategorySettings, saveCategorySettings } from '
 
 const CategoryContext = createContext(null);
 
+function withRequiredCategories(list) {
+  const required = ['New Arrivals', 'Festive Wear', 'Designer', 'Traditional Sarees'];
+  const unique = [...new Set((Array.isArray(list) ? list : []).map(name => String(name).trim()).filter(Boolean))];
+  return [...required, ...unique.filter(name => !required.includes(name))];
+}
+
 export function CategoryProvider({ children }) {
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
   const [loaded, setLoaded] = useState(false);
@@ -10,7 +16,7 @@ export function CategoryProvider({ children }) {
   useEffect(() => {
     let active = true;
     getCategorySettings()
-      .then(list => { if (active && list) setCategories(list); })
+      .then(list => { if (active && list) setCategories(withRequiredCategories(list)); })
       .finally(() => active && setLoaded(true));
     return () => { active = false; };
   }, []);
@@ -19,7 +25,7 @@ export function CategoryProvider({ children }) {
     categories,
     loaded,
     async saveCategories(next) {
-      const cleaned = next.map(c => c.trim()).filter(Boolean);
+      const cleaned = withRequiredCategories(next);
       await saveCategorySettings(cleaned);
       setCategories(cleaned);
       return cleaned;

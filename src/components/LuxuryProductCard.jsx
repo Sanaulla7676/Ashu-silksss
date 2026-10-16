@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, ArrowRight, Check, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowRight, Check, Eye, MessageCircle } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
@@ -36,14 +36,14 @@ function subtitleFor(product) {
 }
 
 /** Fades a photo in once it has actually decoded, so nothing pops. */
-function FadeImage({ url, className = '' }) {
+function FadeImage({ url, className = '', product }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url || '') || (url || '').includes('/video/upload/');
 
   useEffect(() => { setLoaded(false); setFailed(false); }, [url]);
 
-  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} />;
+  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} productName={product?.name} colour={product?.colour} />;
 
   return (
     <img
@@ -121,12 +121,12 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
                 altImage ? 'group-hover:opacity-0' : ''
               }`}
             >
-              <FadeImage url={image} />
+              <FadeImage url={image} product={product} />
             </div>
             {/* Second photo of the same saree, revealed on hover */}
             {altImage && (
               <div className="absolute inset-0 scale-[1.13] opacity-0 transition-all duration-[900ms] ease-out group-hover:scale-[1.04] group-hover:opacity-100">
-                <FadeImage url={altImage} />
+                <FadeImage url={altImage} product={product} />
               </div>
             )}
           </motion.div>
@@ -243,8 +243,8 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
         <div className="mt-auto pt-2.5 sm:pt-3.5">
           <div className="flex items-end justify-between gap-2">
             <div className="flex flex-wrap items-baseline gap-x-1.5">
-              <span className="font-display text-[17px] text-ink sm:text-[21px]">{money(product.price)}</span>
-              {discount > 0 && <s className="text-[10px] text-muted sm:text-[11px]">{money(product.mrp)}</s>}
+              <span className="font-display text-[17px] text-ink sm:text-[21px]">{product.priceOnRequest ? 'Price on request' : money(product.price)}</span>
+              {!product.priceOnRequest && discount > 0 && <s className="text-[10px] text-muted sm:text-[11px]">{money(product.mrp)}</s>}
             </div>
             {/* The whole card already links through, so this is desktop-only. */}
             <Link
@@ -256,16 +256,17 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
             </Link>
           </div>
 
-          <button
-            onClick={handleAdd}
-            className="relative mt-2.5 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[6px] bg-ivory py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:mt-3.5 sm:gap-2 sm:py-[11px] sm:text-[10.5px] sm:tracking-[0.18em]"
-          >
-            <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
-            <span className="relative z-[1] flex items-center gap-1.5 sm:gap-2">
-              {added ? <Check size={12} /> : <ShoppingBag size={12} />}
-              {added ? 'Added' : 'Add to Bag'}
-            </span>
-          </button>
+          {product.priceOnRequest ? (
+            <Link to={`/product/${product.id}`} className="relative mt-2.5 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[6px] bg-ivory py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors duration-500 hover:text-white sm:mt-3.5 sm:gap-2 sm:py-[11px] sm:text-[10.5px] sm:tracking-[0.18em]">
+              <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
+              <span className="relative z-[1] flex items-center gap-1.5 sm:gap-2"><MessageCircle size={12} /> Enquire for Price</span>
+            </Link>
+          ) : (
+            <button onClick={handleAdd} className="relative mt-2.5 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[6px] bg-ivory py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink transition-colors duration-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:mt-3.5 sm:gap-2 sm:py-[11px] sm:text-[10.5px] sm:tracking-[0.18em]">
+              <span className="absolute inset-0 -translate-x-full bg-gold transition-transform duration-500 ease-out group-hover:translate-x-0" />
+              <span className="relative z-[1] flex items-center gap-1.5 sm:gap-2">{added ? <Check size={12} /> : <ShoppingBag size={12} />}{added ? 'Added' : 'Add to Bag'}</span>
+            </button>
+          )}
         </div>
       </div>
     </motion.article>

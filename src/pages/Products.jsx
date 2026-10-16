@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ChevronRight, ChevronDown, Heart, ShoppingBag, X, SlidersHorizontal,
-  Leaf, Truck, ShieldCheck, PackageCheck, Headphones, ImageOff,
+  Leaf, Truck, ShieldCheck, PackageCheck, Headphones, MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DualRangeSlider from '../components/DualRangeSlider';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
+import ProductMedia from '../components/ProductMedia';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
@@ -175,23 +176,20 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-ivory">
         <Link to={`/product/${product.id}`} aria-label={product.name}>
-          {(imageFailed || !images[0]) && (
-            <div role="img" aria-label={`${product.name}: image unavailable`} className="absolute inset-0 z-[5] grid place-content-center gap-2 bg-ivory text-muted">
-              <ImageOff size={28} className="mx-auto" />
-              <span className="text-xs">Image unavailable</span>
+          {(imageFailed || !images[0]) ? (
+            <div className="absolute inset-0">
+              <ProductMedia url="" productName={product.name} colour={product.colour} />
             </div>
+          ) : (
+            <motion.img src={images[0]} alt={product.name} loading="lazy"
+              onLoad={() => setLoaded(true)}
+              onError={() => { setImageFailed(true); setLoaded(true); }}
+              animate={{ scale: hovered ? 1.045 : 1, opacity: !loaded ? 0 : (secondImage && hovered ? 0 : 1) }}
+              transition={{ duration: 0.4, ease: EASE }}
+              className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${product.priceOnRequest ? 'mix-blend-multiply' : ''} ${loaded ? 'blur-0' : 'blur-md'}`}
+            />
           )}
-          <motion.img
-            src={images[0]}
-            alt=""
-            loading="lazy"
-            onLoad={() => setLoaded(true)}
-            onError={() => { setImageFailed(true); setLoaded(true); }}
-            animate={{ scale: hovered ? 1.045 : 1, opacity: !loaded ? 0 : (secondImage && hovered ? 0 : 1) }}
-            transition={{ duration: 0.4, ease: EASE }}
-            className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${product.priceOnRequest ? 'mix-blend-multiply' : ''} ${loaded ? 'blur-0' : 'blur-md'}`}
-          />
-          {secondImage && (
+          {secondImage && !imageFailed && (
             <motion.img
               src={secondImage}
               alt=""
@@ -291,21 +289,27 @@ function QuickView({ product, onClose }) {
     <Modal title="Quick view" onClose={onClose}>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="aspect-[4/5] overflow-hidden rounded-lg bg-ivory">
-          <img src={productImage(mediaUrl(product))} alt="" className="h-full w-full object-cover" />
+          <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} />
         </div>
         <div>
           <span className="eyebrow">{product.category}</span>
           <h3 className="mt-1 font-display text-2xl text-ink">{product.name}</h3>
           <div className="mt-2 flex items-center gap-2.5">
-            <b className="text-xl text-wine">{money(product.price)}</b>
-            {product.mrp > product.price && <s className="text-muted">{money(product.mrp)}</s>}
+            <b className="text-xl text-wine">{product.priceOnRequest ? 'Price on request' : money(product.price)}</b>
+            {!product.priceOnRequest && product.mrp > product.price && <s className="text-muted">{money(product.mrp)}</s>}
             {discount > 0 && <span className="text-sm font-bold text-wine">{discount}% off</span>}
           </div>
           <p className="mt-3 text-sm text-muted">{product.description}</p>
           <div className="mt-5 flex flex-wrap gap-2.5">
-            <button className="btn-primary" onClick={() => { addToCart(product); toast.success(`${product.name} added to cart`); onClose(); }}>
-              <ShoppingBag size={16} /> Add to bag
-            </button>
+            {product.priceOnRequest ? (
+              <Link className="btn-primary" to={`/product/${product.id}`} onClick={onClose}>
+                <MessageCircle size={16} /> Enquire for price
+              </Link>
+            ) : (
+              <button className="btn-primary" onClick={() => { addToCart(product); toast.success(`${product.name} added to cart`); onClose(); }}>
+                <ShoppingBag size={16} /> Add to bag
+              </button>
+            )}
             <Link className="btn-ghost" to={`/product/${product.id}`} onClick={onClose}>View full details</Link>
           </div>
         </div>
@@ -360,7 +364,7 @@ export default function Products() {
   const { allProducts } = useProducts({ category, sort });
 
   const inCategory = useMemo(
-    () => (category === 'All' ? allProducts : allProducts.filter(p => p.category === category)),
+    () => (category === 'All' ? allProducts : allProducts.filter(p => p.category === category || p.collection === category)),
     [allProducts, category]
   );
 

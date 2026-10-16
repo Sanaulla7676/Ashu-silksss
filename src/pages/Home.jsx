@@ -191,7 +191,7 @@ export default function Home() {
   ];
   const featureList = activeFilter === 'All'
     ? orderedProducts
-    : orderedProducts.filter(p => p.category === activeFilter);
+    : orderedProducts.filter(p => p.category === activeFilter || p.collection === activeFilter);
   const filterChips = ['All', ...shownCategories];
   const artFor = i => mediaUrl(allProducts[i % Math.max(allProducts.length, 1)] || {});
 
