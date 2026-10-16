@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, Palette, Image as ImageIcon, Users, Sparkles as ImportIcon,
@@ -41,12 +41,13 @@ function SidebarLinks({ onNavigate }) {
   );
 }
 
-function EmptyPage({ title, text }) {
+function EmptyPage({ title, text, children }) {
   return (
     <div className="grid min-h-[70vh] place-items-center bg-slate-50 p-6">
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <h2 className="font-display text-lg text-slate-900">{title}</h2>
-        {text && <p className="mt-2 text-slate-500">{text}</p>}
+      <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-10">
+        <h2 className="font-display text-xl font-bold text-slate-900">{title}</h2>
+        {text && <div className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">{text}</div>}
+        {children && <div className="mt-5 flex flex-wrap items-center justify-center gap-3">{children}</div>}
         <Link to="/" className="btn-ghost mt-4 inline-flex">Back to site</Link>
       </div>
     </div>
@@ -55,20 +56,85 @@ function EmptyPage({ title, text }) {
 
 export default function AdminLayout() {
   const { user, loading, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [admin, setAdmin] = useState(null);
+  const [permissionError, setPermissionError] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [accountActionError, setAccountActionError] = useState('');
 
   useEffect(() => {
+    let active = true;
+    setPermissionError('');
     if (user) {
-      user.getIdTokenResult(true).then(r => setAdmin(r.claims.admin === true)).catch(() => setAdmin(false));
+      setAdmin(null);
+      user.getIdTokenResult(true)
+        .then(result => {
+          if (active) setAdmin(result.claims.admin === true);
+        })
+        .catch(() => {
+          if (active) {
+            setPermissionError('Firebase sign-in succeeded, but the admin permission could not be verified. Check the account and Firebase project configuration.');
+            setAdmin(false);
+          }
+        });
     } else if (!loading) {
       setAdmin(false);
     }
+    return () => { active = false; };
   }, [user, loading]);
 
-  if (loading || admin === null) return <EmptyPage title="Loading dashboard..." />;
-  if (!user) return <EmptyPage title="Admin sign-in required" />;
-  if (!admin) return <EmptyPage title="Access denied" text="Your account does not have the admin claim." />;
+  const switchAccount = async () => {
+    setAccountActionError('');
+    try {
+      await logout();
+      navigate('/account', { replace: true, state: { from: location.pathname } });
+    } catch {
+      setAccountActionError('Could not sign out automatically. Refresh the page and open the admin sign-in screen again.');
+    }
+  };
+
+  const retryPermissionCheck = async () => {
+    if (!user) return;
+    setAdmin(null);
+    setPermissionError('');
+    setAccountActionError('');
+    try {
+      await user.getIdToken(true);
+      const result = await user.getIdTokenResult(true);
+      setAdmin(result.claims.admin === true);
+    } catch {
+      setPermissionError('Firebase could not refresh the account token. Check the connection and sign in again.');
+      setAdmin(false);
+    }
+  };
+
+  if (loading || (user && admin === null)) return <EmptyPage title="Checking store-owner permissions..." text="Verifying the signed-in account with Firebase." />;
+  if (!user) {
+    return (
+      <EmptyPage title="Admin sign-in required" text="Sign in with the approved Ashu Silks store-owner account to continue.">
+        <Link to="/account" state={{ from: location.pathname }} className="dash-btn-primary">Sign in</Link>
+      </EmptyPage>
+    );
+  }
+  if (!admin) {
+    return (
+      <EmptyPage
+        title={permissionError ? 'Could not verify admin access' : 'Signed in, but admin permission is missing'}
+        text={
+          <>
+            <p>Firebase authenticated <b>{user.email || 'this account'}</b>, but this account does not have the required <code className="rounded bg-slate-100 px-1.5 py-0.5">admin=true</code> permission.</p>
+            <p className="mt-2">Use the original store-owner account. Creating a new customer account will not grant admin access. If this is the correct owner account, the Firebase project administrator must grant its admin custom claim, then you must sign in again.</p>
+            {permissionError && <p className="mt-2 text-amber-700">{permissionError}</p>}
+            {accountActionError && <p role="alert" className="mt-2 text-red-700">{accountActionError}</p>}
+          </>
+        }
+      >
+        <button type="button" onClick={retryPermissionCheck} className="dash-btn-ghost">Retry permission check</button>
+        <button type="button" onClick={switchAccount} className="dash-btn-primary">Sign out and switch account</button>
+      </EmptyPage>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
