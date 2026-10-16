@@ -23,8 +23,10 @@ const copy = {
   },
 };
 
-function DecorativePanel({ mode }) {
-  const c = copy[mode];
+function DecorativePanel({ mode, adminIntent = false }) {
+  const c = adminIntent
+    ? { kicker: 'Ashu Silks · Admin', title: 'Store', titleEm: 'owner.', text: 'Restricted access for the authorised store owner. Sign in with the account approved to manage the shop.' }
+    : copy[mode];
   return (
     <div className="relative flex h-full min-h-[220px] flex-col justify-center overflow-hidden bg-gradient-to-br from-wine to-wine-2 p-7 text-white sm:min-h-[480px] sm:p-10">
       <span className="absolute -right-10 -top-10 h-40 w-40 rounded-full border border-gold/25" />
@@ -49,6 +51,33 @@ function DecorativePanel({ mode }) {
   );
 }
 
+
+function readableAuthError(error) {
+  const code = error?.code || '';
+  if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(code)) {
+    return 'Email or password is incorrect. Check the store-owner account details, or use “Forgot password?” to reset the password.';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Firebase temporarily blocked sign-in after too many attempts. Wait a little before trying again, or reset the password.';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Network request failed. Check your connection and try again.';
+  }
+  if (code === 'auth/unauthorized-domain') {
+    return 'Firebase does not authorize this website domain yet. Add ashusilks.in and www.ashusilks.in under Firebase Authentication → Settings → Authorized domains.';
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Email/password sign-in is disabled in Firebase Authentication. Enable the Email/Password provider in the Firebase Console.';
+  }
+  if (code === 'auth/user-disabled') {
+    return 'This Firebase account is disabled. Re-enable it in Firebase Authentication or use an enabled store-owner account.';
+  }
+  if (code === 'auth/invalid-api-key') {
+    return 'Firebase rejected the configured API key. Check the VITE_FIREBASE_* production environment variables in Vercel.';
+  }
+  return error?.message?.replace(/^Firebase:\s*/i, '') || 'Unable to continue. Please try again.';
+}
+
 export default function Auth() {
   const { user, signIn, signUp, resetPassword, firebaseReady } = useAuth();
   const navigate = useNavigate();
@@ -62,7 +91,11 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const destination = location.state?.from || '/orders';
+  const requestedDestination = typeof location.state?.from === 'string' ? location.state.from : '';
+  const adminIntent = requestedDestination.startsWith('/admin') || location.pathname === '/admin-login';
+  const destination = adminIntent
+    ? (requestedDestination.startsWith('/admin') ? requestedDestination : '/admin')
+    : (requestedDestination || '/orders');
 
   if (user) return <Navigate to={destination} replace />;
 
@@ -95,7 +128,7 @@ export default function Auth() {
       else await signUp(form.name, form.email, form.password);
       navigate(destination, { replace: true });
     } catch (err) {
-      setError(err?.message?.replace('Firebase: ', '') || 'Unable to continue.');
+      setError(readableAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -107,7 +140,7 @@ export default function Auth() {
       await resetPassword(form.email);
       toast.success(`Password reset email sent to ${form.email}`);
     } catch (err) {
-      setError(err?.message?.replace('Firebase: ', '') || 'Could not send reset email.');
+      setError(readableAuthError(err));
     }
   };
 
@@ -115,7 +148,7 @@ export default function Auth() {
 
   const SignInForm = (
     <>
-      <h3 className="font-display text-2xl text-ink">Sign in</h3>
+      <h3 className="font-display text-2xl text-ink">{adminIntent ? 'Store owner sign-in' : 'Sign in'}</h3>
       <div className="mt-5 grid gap-3.5">
         <label className="flex items-center gap-2 rounded-[var(--radius-btn)] border border-ink/15 bg-paper pl-3 pr-2.5 sm:gap-2.5 sm:pl-3.5 sm:pr-3 transition-shadow focus-within:border-wine focus-within:ring-2 focus-within:ring-wine/20">
           <Mail size={16} className="shrink-0 text-muted" />
@@ -147,9 +180,11 @@ export default function Auth() {
       <button className="btn-primary mt-5 w-full" disabled={busy || !firebaseReady}>
         <LogIn size={18} /> {busy ? 'Please wait...' : 'Sign in'}
       </button>
-      <p className="mt-4 text-center text-[0.86rem] text-muted">
-        New to Ashu Silks? <button type="button" onClick={() => switchMode('signup')} className="font-bold text-wine hover:underline">Create an account</button>
-      </p>
+      {!adminIntent && (
+        <p className="mt-4 text-center text-[0.86rem] text-muted">
+          New to Ashu Silks? <button type="button" onClick={() => switchMode('signup')} className="font-bold text-wine hover:underline">Create an account</button>
+        </p>
+      )}
     </>
   );
 
@@ -210,7 +245,7 @@ export default function Auth() {
             {isFormLeft ? (
               <>
                 <div><form onSubmit={submit} className="bg-paper p-5 sm:p-10">{mode === 'login' ? SignInForm : SignUpForm}</form></div>
-                <div><DecorativePanel mode={mode} /></div>
+                <div><DecorativePanel mode={mode} adminIntent={adminIntent} /></div>
               </>
             ) : (
               <>
@@ -242,7 +277,11 @@ export default function Auth() {
           )}
         </div>
 
-        <p className="mt-4 text-center text-[0.78rem] text-muted">Switch states to send the blade across — both forms validate for real.</p>
+        <p className="mt-4 text-center text-[0.78rem] text-muted">
+          {adminIntent
+            ? 'Admin access is limited to approved store-owner accounts. Creating a customer account will not grant admin permissions.'
+            : 'Your account details are handled securely by Firebase Authentication.'}
+        </p>
       </div>
     </section>
   );
