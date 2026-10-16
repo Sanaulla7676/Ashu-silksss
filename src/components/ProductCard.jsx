@@ -53,7 +53,7 @@ export default function ProductCard({ product }) {
       <Link to={`/product/${product.id}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-ivory">
           <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.04]">
-            <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} />
+            <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
           </div>
           <motion.div
             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"

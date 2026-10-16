@@ -43,7 +43,7 @@ function FadeImage({ url, className = '', product }) {
 
   useEffect(() => { setLoaded(false); setFailed(false); }, [url]);
 
-  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} productName={product?.name} colour={product?.colour} />;
+  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} productName={product?.name} colour={product?.colour} imageIndex={product?.imageIndex} />;
 
   return (
     <img

@@ -178,7 +178,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
         <Link to={`/product/${product.id}`} aria-label={product.name}>
           {(imageFailed || !images[0]) ? (
             <div className="absolute inset-0">
-              <ProductMedia url="" productName={product.name} colour={product.colour} />
+              <ProductMedia url="" productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
             </div>
           ) : (
             <motion.img src={images[0]} alt={product.name} loading="lazy"
@@ -289,7 +289,7 @@ function QuickView({ product, onClose }) {
     <Modal title="Quick view" onClose={onClose}>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="aspect-[4/5] overflow-hidden rounded-lg bg-ivory">
-          <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} />
+          <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
         </div>
         <div>
           <span className="eyebrow">{product.category}</span>

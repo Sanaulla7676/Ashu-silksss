@@ -90,7 +90,7 @@ export default function QuickViewModal({ product, onClose }) {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.45, ease: EASE }}
                     >
-                      <ProductMedia url={gallery[active]} productName={product.name} colour={product.colour} />
+                      <ProductMedia url={gallery[active]} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
                     </motion.div>
                   </AnimatePresence>
                   {discount > 0 && (
@@ -111,7 +111,7 @@ export default function QuickViewModal({ product, onClose }) {
                           i === active ? 'ring-2 ring-wine ring-offset-1' : 'opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <ProductMedia url={url} productName={product.name} colour={product.colour} />
+                        <ProductMedia url={url} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
                       </button>
                     ))}
                   </div>

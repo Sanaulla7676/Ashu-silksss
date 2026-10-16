@@ -170,6 +170,7 @@ export default function AdminBulkImport() {
           featured: false,
           sourceBatch: BATCH,
           sourceProductId: group.id,
+          imageIndex: Number(group.id.replace('Product_', '')) - 1,
         };
 
         try {
