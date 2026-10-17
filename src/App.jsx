@@ -31,6 +31,10 @@ const AdminTeam = lazy(() => import('./pages/AdminTeam'));
 const AdminImport = lazy(() => import('./pages/AdminImport'));
 const AdminBulkImport = lazy(() => import('./pages/AdminBulkImport'));
 const AdminCategories = lazy(() => import('./pages/AdminCategories'));
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
+const AdminEnquiries = lazy(() => import('./pages/AdminEnquiries'));
+const AdminMediaLibrary = lazy(() => import('./pages/AdminMediaLibrary'));
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 
 function PageFallback() {
   return (
@@ -123,6 +127,10 @@ export default function App() {
                   <Route path="hero" element={<AdminHero />} />
                   <Route path="theme" element={<AdminTheme />} />
                   <Route path="categories" element={<AdminCategories />} />
+                  <Route path="customers" element={<AdminCustomers />} />
+                  <Route path="enquiries" element={<AdminEnquiries />} />
+                  <Route path="media" element={<AdminMediaLibrary />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
                   <Route path="team" element={<AdminTeam />} />
                 </Route>
 

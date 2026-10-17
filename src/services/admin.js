@@ -28,3 +28,15 @@ export async function getAllEnquiries() {
   const snapshot = await getDocs(query(collection(db, 'enquiries'), orderBy('createdAt', 'desc')));
   return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 }
+
+
+export async function updateEnquiryStatusAdmin(id, status) {
+  requireFirebase();
+  const allowed = new Set(['new', 'contacted', 'resolved', 'spam']);
+  const normalized = String(status || '').toLowerCase();
+  if (!id || !allowed.has(normalized)) throw new Error('Choose a valid enquiry and status.');
+  await updateDoc(doc(db, 'enquiries', id), {
+    status: normalized,
+    updatedAt: serverTimestamp(),
+  });
+}

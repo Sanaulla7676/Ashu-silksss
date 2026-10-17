@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-do
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, Palette, Image as ImageIcon, Users, Sparkles as ImportIcon,
-  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree,
+  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree, MessageSquare, Images, BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,6 +11,10 @@ const NAV = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Products', icon: Package },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+  { to: '/admin/customers', label: 'Customers', icon: Users },
+  { to: '/admin/enquiries', label: 'Enquiries', icon: MessageSquare },
+  { to: '/admin/media', label: 'Media Library', icon: Images },
+  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/admin/import', label: 'Import Photos', icon: ImportIcon },
   { to: '/admin/bulk-import', label: 'Bulk Import', icon: ImportIcon },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
