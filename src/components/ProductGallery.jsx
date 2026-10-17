@@ -3,8 +3,15 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductMedia from './ProductMedia';
 
-export default function ProductGallery({ media = [], badge, productName = '', colour = '', imageIndex }) {
-  const images = media.length ? media : [''];
+export default function ProductGallery({ media = [], badge, productName = '', colour = '', imageIndex, imageIndexes = [] }) {
+  const fallbackIndexes = Array.isArray(imageIndexes) && imageIndexes.length
+    ? imageIndexes
+    : (imageIndex !== undefined && Number.isInteger(Number(imageIndex)) && Number(imageIndex) >= 0 ? [Number(imageIndex)] : []);
+  const images = media.length
+    ? media.map((url, i) => ({ url, imageIndex: fallbackIndexes[i] ?? imageIndex }))
+    : fallbackIndexes.length
+      ? fallbackIndexes.map(index => ({ url: '', imageIndex: index }))
+      : [{ url: '', imageIndex }];
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: images.length > 1 });
   const [selected, setSelected] = useState(0);
 
@@ -24,10 +31,10 @@ export default function ProductGallery({ media = [], badge, productName = '', co
       <div className="relative overflow-hidden rounded-md bg-gold-2/25 shadow-[var(--shadow-lift)]">
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
-            {images.map((url, i) => (
+            {images.map(({ url, imageIndex: tileIndex }, i) => (
               <div className="min-w-0 flex-[0_0_100%]" key={i}>
                 <div className="aspect-[3/4] w-full">
-                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={imageIndex} />
+                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={tileIndex ?? imageIndex} />
                 </div>
               </div>
             ))}

@@ -182,6 +182,16 @@ export default function Home() {
   const artisanY = useTransform(artisanProgress, [0, 1], ['-8%', '8%']);
 
   const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
+  const categoryFallbackImageIndexes = {
+    'New Arrivals': 0,
+    'Festive Wear': 6,
+    Designer: 24,
+    'Traditional Sarees': 42,
+    'Mysore Silk': 83,
+    'Kanjeevaram Silk': 115,
+    Bridal: 48,
+    Cotton: 72,
+  };
   // The landing page shows the whole in-stock catalogue, featured ones first.
   const featuredIds = new Set(featuredProducts.map(p => p.id));
   const inStock = allProducts.filter(p => Number(p.stock ?? 0) > 0 || p.stockOnRequest);
@@ -235,7 +245,7 @@ export default function Home() {
         <div className="absolute inset-0">
           <motion.div className="h-full w-full" style={{ scale: heroScale }}>
             <div className="as-kenburns h-full w-full">
-              <ProductMedia url={hero.url} />
+              <ProductMedia url={hero.url} imageIndex={hero.imageIndex ?? 0} />
             </div>
           </motion.div>
           <div
@@ -351,7 +361,7 @@ export default function Home() {
                     <Link to={`/products/${encodeURIComponent(cat)}`} className="group block text-center">
                       <div className="as-ring mx-auto aspect-square w-[88px] overflow-hidden rounded-full shadow-[0_9px_30px_rgba(49,35,22,.09)] transition-all duration-[450ms] group-hover:-translate-y-[6px] group-hover:shadow-[0_18px_38px_rgba(49,35,22,.22)] sm:w-[105px] lg:w-[126px]">
                         <div className="h-full w-full transition-transform duration-[700ms] ease-out group-hover:scale-110">
-                          <ProductMedia url={mediaUrl(byCategory[cat]?.[0] || {})} />
+                          <ProductMedia url={mediaUrl(byCategory[cat]?.[0] || {})} imageIndex={byCategory[cat]?.[0]?.imageIndex ?? byCategory[cat]?.[0]?.imageIndexes?.[0] ?? categoryFallbackImageIndexes[cat] ?? 0} />
                         </div>
                       </div>
                       <h3 className="mb-1 mt-3.5 text-[11px] font-medium text-ink transition-colors group-hover:text-gold sm:text-[13px]">
@@ -375,7 +385,7 @@ export default function Home() {
             >
               <motion.div variants={unmask} className="min-h-[280px] overflow-hidden sm:min-h-[360px] md:min-h-[420px]">
                 <motion.div className="h-[114%] w-full" style={{ y: featureY }}>
-                  <ProductMedia url={artFor(1)} />
+                  <ProductMedia url={artFor(1)} imageIndex={allProducts[1]?.imageIndex ?? allProducts[1]?.imageIndexes?.[0] ?? 6} />
                 </motion.div>
               </motion.div>
               <motion.div
@@ -583,7 +593,7 @@ export default function Home() {
           <motion.div variants={stagger} {...inView} className="grid md:grid-cols-2">
             <motion.div variants={unmask} className="min-h-[280px] overflow-hidden sm:min-h-[360px] md:min-h-[520px]">
               <motion.div className="h-[116%] w-full" style={{ y: artisanY }}>
-                <ProductMedia url={artFor(2)} />
+                <ProductMedia url={artFor(2)} imageIndex={allProducts[2]?.imageIndex ?? allProducts[2]?.imageIndexes?.[0] ?? 42} />
               </motion.div>
             </motion.div>
             <motion.div
@@ -637,7 +647,7 @@ export default function Home() {
                     className="as-lift group relative block aspect-[1.05] overflow-hidden rounded-[12px]"
                   >
                     <div className="h-full w-full transition-transform duration-[700ms] ease-out group-hover:scale-[1.08]">
-                      <ProductMedia url={artFor(i + 3)} />
+                      <ProductMedia url={artFor(i + 3)} imageIndex={allProducts[(i + 3) % Math.max(allProducts.length, 1)]?.imageIndex ?? allProducts[(i + 3) % Math.max(allProducts.length, 1)]?.imageIndexes?.[0] ?? [0, 24, 48, 72][i] ?? 0} />
                     </div>
                     <span className="absolute inset-0 bg-gradient-to-t from-black/[0.65] to-transparent to-[60%] transition-opacity duration-300 group-hover:from-black/[0.78]" />
                     <div className="absolute bottom-5 left-5 z-[2] text-white transition-transform duration-[450ms] ease-out group-hover:-translate-y-1">

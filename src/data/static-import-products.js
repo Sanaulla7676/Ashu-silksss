@@ -2,6 +2,19 @@ import { VISUAL_PRODUCT_DETAILS } from './product-names-2026-10-15';
 
 const BATCH = 'import-2026-10-15';
 
+// Product-folder photo counts in the exact order used to build the 192-tile atlas.
+const PRODUCT_PHOTO_COUNTS = [1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 1, 1, 2, 1, 3, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 2, 3, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 1, 2, 2, 1, 3, 2, 2, 1, 1, 1, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1];
+
+function photoIndexesFor(sourceProductId) {
+  const match = String(sourceProductId || '').match(/(\\d+)/);
+  const productNumber = Number(match?.[1]);
+  const productPosition = productNumber - 1;
+  if (!Number.isInteger(productPosition) || productPosition < 0 || productPosition >= PRODUCT_PHOTO_COUNTS.length) return [];
+  let firstIndex = 0;
+  for (let i = 0; i < productPosition; i += 1) firstIndex += PRODUCT_PHOTO_COUNTS[i];
+  return Array.from({ length: PRODUCT_PHOTO_COUNTS[productPosition] }, (_, offset) => firstIndex + offset);
+}
+
 export function visualCategoryFor(name) {
   const value = String(name || '').toLowerCase();
   if (/checked|geometric|contrast|minimal|colour-block|color-block|woven-panel/.test(value)) return 'Designer';
@@ -39,6 +52,7 @@ export const STATIC_IMPORT_PRODUCTS = Object.entries(VISUAL_PRODUCT_DETAILS).map
   const sku = 'AS-IMP-20261015-' + number;
   const pattern = inferPattern(visual.name);
   const category = visualCategoryFor(visual.name);
+  const imageIndexes = photoIndexesFor(sourceProductId);
 
   return {
     id: sku, name: visual.name, brand: 'Ashu Silks', category,
@@ -52,7 +66,8 @@ export const STATIC_IMPORT_PRODUCTS = Object.entries(VISUAL_PRODUCT_DETAILS).map
     tags: ['new arrival', 'saree', category.toLowerCase(), visual.colour.toLowerCase(), pattern.toLowerCase(), BATCH, sourceProductId.toLowerCase()],
     media: [], featured: false,
     // Zero-based tile aligned with Product_001 through Product_118 in the atlas.
-    imageIndex: Number(number) - 1,
+    imageIndexes,
+    imageIndex: imageIndexes[0] ?? Number(number) - 1,
     createdAt: Date.parse('2026-10-15T00:00:00.000Z') - Number(number) * 1000,
     sourceBatch: BATCH, sourceProductId, imagePending: true,
   };

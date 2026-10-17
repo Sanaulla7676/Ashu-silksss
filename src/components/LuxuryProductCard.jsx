@@ -36,14 +36,14 @@ function subtitleFor(product) {
 }
 
 /** Fades a photo in once it has actually decoded, so nothing pops. */
-function FadeImage({ url, className = '', product }) {
+function FadeImage({ url, className = '', product, imageIndex }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url || '') || (url || '').includes('/video/upload/');
 
   useEffect(() => { setLoaded(false); setFailed(false); }, [url]);
 
-  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} productName={product?.name} colour={product?.colour} imageIndex={product?.imageIndex} />;
+  if (!url || isVideo || failed) return <ProductMedia url={failed ? '' : url} className={className} productName={product?.name} colour={product?.colour} imageIndex={imageIndex ?? product?.imageIndexes?.[0] ?? product?.imageIndex} />;
 
   return (
     <img
@@ -67,7 +67,11 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
 
   const gallery = mediaUrls(product);
   const image = mediaUrl(product);
+  const imageIndexes = Array.isArray(product.imageIndexes) ? product.imageIndexes : [];
   const altImage = gallery[1] || '';
+  const altImageIndex = imageIndexes[1];
+  const hasAltImage = Boolean(altImage) || altImageIndex !== undefined;
+  const photoCount = Math.max(gallery.length, imageIndexes.length);
   const palette = useImagePalette(image);
   const discount = discountPercent(product.price, product.mrp);
 
@@ -118,15 +122,15 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
             {/* Primary photo */}
             <div
               className={`h-full w-full scale-[1.04] transition-all duration-[900ms] ease-out group-hover:scale-[1.13] ${
-                altImage ? 'group-hover:opacity-0' : ''
+                hasAltImage ? 'group-hover:opacity-0' : ''
               }`}
             >
-              <FadeImage url={image} product={product} />
+              <FadeImage url={image} product={product} imageIndex={imageIndexes[0] ?? product.imageIndex} />
             </div>
             {/* Second photo of the same saree, revealed on hover */}
-            {altImage && (
+            {hasAltImage && (
               <div className="absolute inset-0 scale-[1.13] opacity-0 transition-all duration-[900ms] ease-out group-hover:scale-[1.04] group-hover:opacity-100">
-                <FadeImage url={altImage} product={product} />
+                <FadeImage url={altImage} product={product} imageIndex={altImageIndex ?? product.imageIndex} />
               </div>
             )}
           </motion.div>
@@ -149,9 +153,9 @@ export default function LuxuryProductCard({ product, badge, onQuickView }) {
         )}
 
         {/* Photo count, so people know there is more to see */}
-        {gallery.length > 1 && (
+        {photoCount > 1 && (
           <span className="absolute bottom-3 right-3 z-[3] rounded-full bg-ink/55 px-2 py-[3px] text-[9px] font-medium text-white/90 backdrop-blur transition-opacity duration-300 group-hover:opacity-0">
-            1/{gallery.length}
+            1/{photoCount}
           </span>
         )}
 

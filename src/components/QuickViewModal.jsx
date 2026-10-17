@@ -34,6 +34,8 @@ export default function QuickViewModal({ product, onClose }) {
   const gallery = product && Array.isArray(product.media) && product.media.length
     ? product.media.filter(Boolean)
     : product ? mediaUrls(product) : [];
+  const photoIndexes = product && Array.isArray(product.imageIndexes) ? product.imageIndexes : [];
+  const galleryLength = gallery.length || photoIndexes.length || (product?.imageIndex !== undefined ? 1 : 0);
   const discount = product ? discountPercent(product.price, product.mrp) : 0;
   const wished = product ? isInWishlist(product.id) : false;
 
@@ -83,14 +85,14 @@ export default function QuickViewModal({ product, onClose }) {
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={gallery[active]}
+                      key={gallery[active] || (photoIndexes[active] ?? product.imageIndex ?? active)}
                       className="h-full w-full"
                       initial={{ opacity: 0, scale: 1.04 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.45, ease: EASE }}
                     >
-                      <ProductMedia url={gallery[active]} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
+                      <ProductMedia url={gallery[active] || ''} productName={product.name} colour={product.colour} imageIndex={photoIndexes[active] ?? product.imageIndex} />
                     </motion.div>
                   </AnimatePresence>
                   {discount > 0 && (
@@ -100,18 +102,22 @@ export default function QuickViewModal({ product, onClose }) {
                   )}
                 </div>
 
-                {gallery.length > 1 && (
+                {galleryLength > 1 && (
                   <div className="flex gap-2 overflow-x-auto p-3">
-                    {gallery.map((url, i) => (
+                    {Array.from({ length: galleryLength }, (_, i) => ({
+                      i,
+                      url: gallery[i] || '',
+                      imageIndex: photoIndexes[i] ?? product.imageIndex,
+                    })).map(({ i, url, imageIndex }) => (
                       <button
-                        key={url}
+                        key={url || (imageIndex ?? i)}
                         onClick={() => setActive(i)}
                         aria-label={`View photo ${i + 1}`}
                         className={`h-14 w-12 shrink-0 overflow-hidden rounded-[6px] transition-all duration-300 ${
                           i === active ? 'ring-2 ring-wine ring-offset-1' : 'opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <ProductMedia url={url} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
+                        <ProductMedia url={url} productName={product.name} colour={product.colour} imageIndex={imageIndex} />
                       </button>
                     ))}
                   </div>

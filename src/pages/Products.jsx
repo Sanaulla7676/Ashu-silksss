@@ -10,6 +10,7 @@ import DualRangeSlider from '../components/DualRangeSlider';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
 import ProductMedia from '../components/ProductMedia';
+import ProductGallery from '../components/ProductGallery';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
@@ -162,7 +163,9 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
   const wished = isInWishlist(product.id);
   const badges = badgeFor(product, newIds);
   const images = mediaUrls(product).map(productImage);
+  const imageIndexes = Array.isArray(product.imageIndexes) ? product.imageIndexes : [];
   const secondImage = images[1];
+  const secondImageIndex = imageIndexes[1];
 
   return (
     <motion.article
@@ -189,16 +192,26 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
               className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-500 ${product.priceOnRequest ? 'mix-blend-multiply' : ''} ${loaded ? 'blur-0' : 'blur-md'}`}
             />
           )}
-          {secondImage && !imageFailed && (
-            <motion.img
-              src={secondImage}
-              alt=""
-              loading="lazy"
-              onError={() => setImageFailed(true)}
-              animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1.045 : 1 }}
-              transition={{ duration: 0.4, ease: EASE }}
-              className={`absolute inset-0 h-full w-full object-cover ${product.priceOnRequest ? 'mix-blend-multiply' : ''}`}
-            />
+          {(secondImage || secondImageIndex !== undefined) && !imageFailed && (
+            secondImage ? (
+              <motion.img
+                src={secondImage}
+                alt=""
+                loading="lazy"
+                onError={() => setImageFailed(true)}
+                animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1.045 : 1 }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className={`absolute inset-0 h-full w-full object-cover ${product.priceOnRequest ? 'mix-blend-multiply' : ''}`}
+              />
+            ) : (
+              <motion.div
+                animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1.045 : 1 }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className="absolute inset-0"
+              >
+                <ProductMedia url="" productName={product.name} colour={product.colour} imageIndex={secondImageIndex} />
+              </motion.div>
+            )
           )}
         </Link>
 
@@ -289,7 +302,7 @@ function QuickView({ product, onClose }) {
     <Modal title="Quick view" onClose={onClose}>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="aspect-[4/5] overflow-hidden rounded-lg bg-ivory">
-          <ProductMedia url={mediaUrl(product)} productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
+          <ProductGallery media={mediaUrls(product)} imageIndexes={product.imageIndexes} imageIndex={product.imageIndex} productName={product.name} colour={product.colour} />
         </div>
         <div>
           <span className="eyebrow">{product.category}</span>

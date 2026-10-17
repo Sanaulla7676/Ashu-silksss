@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { productImage } from '../utils';
 
-const PRODUCT_ATLAS = 'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/1b9766a9-a7c8-48fa-9957-bad562e8f40a.webp';
-const ATLAS_COLUMNS = 10;
-const ATLAS_ROWS = 12;
+const PRODUCT_ATLAS = 'https://d2ol7oe51mr4n9.cloudfront.net/user_35mtirXTBJzeOp1GtU8b1ixSM0D/7ce5817a-03bc-47d3-89ae-89b99bca58b9.webp';
+const ATLAS_COLUMNS = 12;
+const ATLAS_ROWS = 16;
 
 const TONES = [
   { match: /red|crimson|ruby|scarlet|vermilion|burgundy|maroon|wine|rust|coral|orange|saffron|copper/i, light: '#a34b57', dark: '#2c111b' },
@@ -21,7 +21,7 @@ function toneFor(colour) {
 }
 
 function isValidImageIndex(imageIndex) {
-  return Number.isInteger(Number(imageIndex)) && Number(imageIndex) >= 0 && Number(imageIndex) < 118;
+  return Number.isInteger(Number(imageIndex)) && Number(imageIndex) >= 0 && Number(imageIndex) < 192;
 }
 
 function atlasStyle(imageIndex) {
