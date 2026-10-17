@@ -78,9 +78,14 @@ export default function AdminHero() {
   };
 
   const reset = async () => {
-    await resetHero();
-    setDraft(DEFAULT_HERO);
-    toast.success('Hero reset to default');
+    setSaving(true); setError('');
+    try {
+      await resetHero();
+      setDraft(DEFAULT_HERO);
+      toast.success('Hero reset to default and published');
+    } catch (err) {
+      setError(err.message || 'Could not reset the homepage hero.');
+    } finally { setSaving(false); }
   };
 
   const tPos = draft.textPosition || DEFAULT_HERO.textPosition;

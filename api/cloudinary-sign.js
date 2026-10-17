@@ -97,7 +97,7 @@ export default async function handler(req, res) {
   const body = jsonBody(req);
   const folder = String(body.folder || '');
   const publicId = String(body.publicId || '');
-  const allowedFolder = /^ashu-silks\/(?:products\/[A-Za-z0-9_-]{1,90}(?:\/[A-Za-z0-9_-]{1,90})?|hero)$/;
+  const allowedFolder = /^ashu-silks\/(?:products\/[A-Za-z0-9_-]{1,90}(?:\/[A-Za-z0-9_-]{1,90})?|categories|hero)$/;
   if (!allowedFolder.test(folder)) {
     return sendError(res, 400, 'Upload folder is not permitted.');
   }

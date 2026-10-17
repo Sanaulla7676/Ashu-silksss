@@ -15,12 +15,13 @@ const paymentBadge = {
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
   const [error, setError] = useState('');
 
   const load = async () => {
-    setBusy(true);
+    setBusy(true); setError('');
     try { setOrders(await getAllOrders()); }
-    catch (e) { setError(e.message); }
+    catch (e) { setError(e.message || 'Could not load orders.'); }
     finally { setBusy(false); }
   };
   useEffect(() => { load(); }, []);
@@ -35,7 +36,7 @@ export default function AdminOrders() {
         <button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button>
       </div>
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
-      {!busy && !orders.length && (
+      {!busy && !error && !orders.length && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">No orders yet.</div>
       )}
       <div className="grid gap-2.5">
@@ -54,10 +55,18 @@ export default function AdminOrders() {
               <select
                 className="dash-field w-full sm:w-auto"
                 value={o.status || 'pending'}
+                disabled={updatingId === o.id || busy}
                 onChange={async e => {
-                  await updateOrderStatusAdmin(o.id, e.target.value);
-                  setOrders(xs => xs.map(x => x.id === o.id ? { ...x, status: e.target.value } : x));
-                  toast.success('Order status updated');
+                  const nextStatus = e.target.value;
+                  setUpdatingId(o.id); setError('');
+                  try {
+                    await updateOrderStatusAdmin(o.id, nextStatus);
+                    setOrders(xs => xs.map(x => x.id === o.id ? { ...x, status: nextStatus } : x));
+                    toast.success('Order status updated');
+                  } catch (err) {
+                    setError(err.message || 'The order status was not saved.');
+                    toast.error('Could not save the order status. The previous status is unchanged.');
+                  } finally { setUpdatingId(null); }
                 }}
               >
                 {statusOptions.map(s => <option key={s}>{s}</option>)}

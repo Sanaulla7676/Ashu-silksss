@@ -1,4 +1,4 @@
-import { VISUAL_PRODUCT_DETAILS } from './product-names-2026-10-15';
+import { VISUAL_PRODUCT_DETAILS } from './product-names-2026-10-15.js';
 
 const BATCH = 'import-2026-10-15';
 

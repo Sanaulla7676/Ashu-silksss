@@ -8,6 +8,7 @@ import LuxuryProductCard, { ProductCardSkeleton } from '../components/LuxuryProd
 import QuickViewModal from '../components/QuickViewModal';
 import { useProducts } from '../hooks/useProducts';
 import { useHero } from '../context/HeroContext';
+import { useCategories as useCategorySettings } from '../context/CategoryContext';
 import { createEnquiry } from '../services/firestore';
 import { mediaUrl, discountPercent } from '../utils';
 import { storeInfo } from '../data';
@@ -155,6 +156,7 @@ function SectionHeading({ kicker, title, action }) {
 export default function Home() {
   const { featuredProducts, categories, allProducts, byCategory, loading } = useProducts();
   const { hero } = useHero();
+  const { categoryImages, categories: managedCategories } = useCategorySettings();
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -181,7 +183,10 @@ export default function Home() {
   const { scrollYProgress: artisanProgress } = useScroll({ target: artisanRef, offset: ['start end', 'end start'] });
   const artisanY = useTransform(artisanProgress, [0, 1], ['-8%', '8%']);
 
-  const shownCategories = categories.filter(c => c !== 'All').slice(0, 6);
+  // The admin's saved category order drives the storefront tiles; product-derived
+  // categories are only a fallback for older settings documents.
+  const shownCategories = (managedCategories?.length ? managedCategories : categories)
+    .filter(c => c !== 'All').slice(0, 6);
   const categoryFallbackImageIndexes = {
     'New Arrivals': 0,
     'Festive Wear': 6,
@@ -361,7 +366,7 @@ export default function Home() {
                     <Link to={`/products/${encodeURIComponent(cat)}`} className="group block text-center">
                       <div className="as-ring mx-auto aspect-square w-[88px] overflow-hidden rounded-full shadow-[0_9px_30px_rgba(49,35,22,.09)] transition-all duration-[450ms] group-hover:-translate-y-[6px] group-hover:shadow-[0_18px_38px_rgba(49,35,22,.22)] sm:w-[105px] lg:w-[126px]">
                         <div className="h-full w-full transition-transform duration-[700ms] ease-out group-hover:scale-110">
-                          <ProductMedia url={mediaUrl(byCategory[cat]?.[0] || {})} imageIndex={byCategory[cat]?.[0]?.imageIndex ?? byCategory[cat]?.[0]?.imageIndexes?.[0] ?? categoryFallbackImageIndexes[cat] ?? 0} />
+                          <ProductMedia url={categoryImages?.[cat] || mediaUrl(byCategory[cat]?.[0] || {})} imageIndex={byCategory[cat]?.[0]?.imageIndexes?.[0] ?? byCategory[cat]?.[0]?.imageIndex ?? categoryFallbackImageIndexes[cat] ?? 0} />
                         </div>
                       </div>
                       <h3 className="mb-1 mt-3.5 text-[11px] font-medium text-ink transition-colors group-hover:text-gold sm:text-[13px]">

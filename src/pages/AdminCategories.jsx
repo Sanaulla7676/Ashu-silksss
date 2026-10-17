@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, Save, ArrowUp, ArrowDown, Info, RefreshCw, Pencil, X, Check } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowUp, ArrowDown, Info, RefreshCw, Pencil, X, Check, ImagePlus, ImageOff, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCategories } from '../context/CategoryContext';
-import { getCatalogProducts, updateCatalogProduct } from '../services/catalog';
+import { getAdminCatalogProducts, createCatalogProduct, updateCatalogProduct } from '../services/catalog';
+import { uploadCategoryImage, cloudinaryReady } from '../services/cloudinary';
 
 export default function AdminCategories() {
-  const { categories, saveCategories } = useCategories();
+  const { categories, categoryImages, saveCategories, saveCategoryImage, saveCategoryImages } = useCategories();
   const [draft, setDraft] = useState(categories);
   const [newName, setNewName] = useState('');
   const [renaming, setRenaming] = useState(null);
@@ -13,11 +14,12 @@ export default function AdminCategories() {
   const [products, setProducts] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingCategory, setUploadingCategory] = useState('');
 
   useEffect(() => { setDraft(categories); }, [categories]);
 
   const load = async () => {
-    try { setProducts(await getCatalogProducts()); }
+    try { setProducts(await getAdminCatalogProducts()); }
     catch (e) { setError(e.message); }
   };
   useEffect(() => { load(); }, []);
@@ -67,10 +69,34 @@ export default function AdminCategories() {
     setBusy(true); setError('');
     try {
       await saveCategories(draft);
-      toast.success('Categories saved');
+      toast.success('Categories saved and published');
     } catch (e) {
       setError(e.message);
     } finally { setBusy(false); }
+  };
+
+  const uploadCover = async (name, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setUploadingCategory(name); setError('');
+    try {
+      const url = await uploadCategoryImage(file);
+      await saveCategoryImage(name, url);
+      toast.success(`${name} cover saved to the live storefront`);
+    } catch (e) {
+      setError(e.message || `Could not save the ${name} cover.`);
+    } finally { setUploadingCategory(''); }
+  };
+
+  const removeCover = async name => {
+    setUploadingCategory(name); setError('');
+    try {
+      await saveCategoryImage(name, '');
+      toast.success(`${name} now uses its automatic product-photo cover`);
+    } catch (e) {
+      setError(e.message || `Could not remove the ${name} cover.`);
+    } finally { setUploadingCategory(''); }
   };
 
   // Renaming has to move every product across too, or they fall out of the shop.
@@ -87,9 +113,19 @@ export default function AdminCategories() {
     try {
       const affected = products.filter(p => p.category === from);
       for (const p of affected) {
-        await updateCatalogProduct(p.id, { category: to });
+        if (p.isStaticFallback) {
+          const data = { ...p, category: to };
+          delete data.id; delete data.isStaticFallback; delete data.isFallbackProduct;
+          await createCatalogProduct(data);
+        } else {
+          await updateCatalogProduct(p.id, { category: to });
+        }
       }
       const next = draft.map((c, i) => (i === index ? to : c));
+      const nextImages = { ...categoryImages };
+      if (nextImages[from]) nextImages[to] = nextImages[from];
+      delete nextImages[from];
+      await saveCategoryImages(nextImages);
       await saveCategories(next);
       setDraft(next);
       setRenaming(null);
@@ -168,10 +204,25 @@ export default function AdminCategories() {
             <h2 className="font-semibold text-slate-900">Your categories ({draft.length})</h2>
             {dirty && <span className="text-xs font-semibold text-amber-600">Unsaved changes</span>}
           </div>
+          <p className="mb-3 text-xs leading-5 text-slate-500">Choose a cover image for each category. It updates the homepage collection tile immediately; without a custom cover, the store uses that category’s product photos.</p>
+          {!cloudinaryReady && <p role="alert" className="mb-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Image uploads are disabled because Cloudinary is not configured. Text and category ordering can still be saved.</p>}
 
           <div className="grid gap-2.5">
             {draft.map((name, i) => (
-              <div key={`${name}-${i}`} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+              <div key={`${name}-${i}`} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3 sm:w-[220px] sm:shrink-0">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-amber-50">
+                    {categoryImages?.[name] ? <img src={categoryImages[name]} alt={`${name} cover`} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full flex-col items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500"><ImagePlus size={18} /><span>Auto cover</span></div>}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-slate-800">{categoryImages?.[name] ? 'Custom cover' : 'Product photo cover'}</p>
+                    <label className={`mt-1 inline-flex cursor-pointer items-center gap-1 text-xs font-semibold ${cloudinaryReady ? 'text-indigo-600 hover:underline' : 'cursor-not-allowed text-slate-400'}`}>
+                      <Upload size={12} /> {uploadingCategory === name ? 'Saving…' : 'Upload cover'}
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden disabled={!cloudinaryReady || Boolean(uploadingCategory) || busy} onChange={e => uploadCover(name, e)} />
+                    </label>
+                    {categoryImages?.[name] && <button type="button" className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600" onClick={() => removeCover(name)} disabled={Boolean(uploadingCategory) || busy}><ImageOff size={12} /> Remove cover</button>}
+                  </div>
+                </div>
                 <div className="flex shrink-0 flex-col">
                   <button
                     className="text-slate-400 transition-colors hover:text-indigo-600 disabled:opacity-25"
@@ -194,7 +245,7 @@ export default function AdminCategories() {
                 {renaming === i ? (
                   <>
                     <input
-                      className="dash-field"
+                      className="dash-field min-w-0 flex-1"
                       value={renameTo}
                       autoFocus
                       onChange={e => setRenameTo(e.target.value)}
