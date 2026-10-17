@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchLiveProducts } from '../services/liveCatalog';
+import { subscribeToLiveProducts } from '../services/liveCatalog';
 
 export function useProducts({ category = 'All', search = '', sort = 'featured' } = {}) {
   const [catalog, setCatalog] = useState([]);
@@ -8,11 +8,17 @@ export function useProducts({ category = 'All', search = '', sort = 'featured' }
 
   useEffect(() => {
     let active = true;
-    fetchLiveProducts()
-      .then(items => { if (active) setCatalog(items); })
-      .catch(err => { if (active) { setError(err?.message || 'Unable to load catalogue.'); setCatalog([]); } })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    const unsubscribe = subscribeToLiveProducts(items => {
+      if (!active) return;
+      setCatalog(items);
+      setError('');
+      setLoading(false);
+    }, err => {
+      if (!active) return;
+      setError(err?.message || 'Unable to load catalogue.');
+      setLoading(false);
+    });
+    return () => { active = false; unsubscribe?.(); };
   }, []);
 
   const products = useMemo(() => {

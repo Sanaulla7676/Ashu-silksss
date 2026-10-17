@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { getHeroSettings, saveHeroSettings } from '../services/hero';
+import { subscribeToHeroSettings, saveHeroSettings } from '../services/hero';
 
 export const DEFAULT_HERO = {
   type: 'video',
@@ -72,10 +72,16 @@ export function HeroProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    getHeroSettings()
-      .then(data => { if (active && data?.url) setHero({ ...DEFAULT_HERO, ...data }); })
-      .finally(() => active && setLoaded(true));
-    return () => { active = false; };
+    const unsubscribe = subscribeToHeroSettings(data => {
+      if (!active) return;
+      if (data?.url) setHero({ ...DEFAULT_HERO, ...data });
+      setLoaded(true);
+    }, error => {
+      if (!active) return;
+      console.warn('[hero] Live settings subscription failed.', error);
+      setLoaded(true);
+    });
+    return () => { active = false; unsubscribe?.(); };
   }, []);
 
   const value = useMemo(() => ({

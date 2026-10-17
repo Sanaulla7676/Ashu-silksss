@@ -79,7 +79,7 @@ export default function Admin() {
 
   const load = async () => {
     setBusy(true); setError('');
-    try { setProducts(await getCatalogProducts()); }
+    try { setProducts(await getAdminCatalogProducts()); }
     catch (e) { setError(readableAdminError(e)); }
     finally { setBusy(false); }
   };

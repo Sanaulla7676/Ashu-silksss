@@ -17,6 +17,18 @@ test('supports newline-separated legacy URLs without splitting commas inside a U
   ]);
 });
 
+test('deduplicates repeated photos and Cloudinary transformations of the same asset', () => {
+  assert.deepEqual(mediaUrls({ media: [
+    'https://res.cloudinary.com/demo/image/upload/c_limit,w_1200/v1700000000/ashu-silks/products/a.jpg?version=1',
+    'https://res.cloudinary.com/demo/image/upload/q_auto/v1700000000/ashu-silks/products/a.jpg',
+    'https://cdn.example/saree.jpg',
+    'https://cdn.example/saree.jpg',
+  ] }), [
+    'https://res.cloudinary.com/demo/image/upload/c_limit,w_1200/v1700000000/ashu-silks/products/a.jpg?version=1',
+    'https://cdn.example/saree.jpg',
+  ]);
+});
+
 test('returns no media for empty or invalid values', () => {
   assert.deepEqual(mediaUrls({ media: null }), []);
   assert.deepEqual(mediaUrls({ media: 4 }), []);

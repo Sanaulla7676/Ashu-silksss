@@ -19,10 +19,9 @@ const statusColors = {
 };
 
 function toDate(ts) {
-  if (!ts) return new Date();
-  if (typeof ts.toDate === 'function') return ts.toDate();
-  if (ts.seconds) return new Date(ts.seconds * 1000);
-  return new Date(ts);
+  if (!ts) return null;
+  const value = typeof ts.toDate === 'function' ? ts.toDate() : ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+  return Number.isNaN(value.getTime()) ? null : value;
 }
 
 function StatCard({ icon: Icon, label, value, tint }) {
@@ -37,12 +36,17 @@ function StatCard({ icon: Icon, label, value, tint }) {
   );
 }
 
+function startDateTomorrow(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
+}
+
 export default function AdminOverview() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [catalogError, setCatalogError] = useState('');
+  const [dateRange, setDateRange] = useState('30');
   const { categories, categoryImages } = useCategories();
 
   const load = async () => {
@@ -56,15 +60,28 @@ export default function AdminOverview() {
   };
   useEffect(() => { load(); }, []);
 
+  const period = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (dateRange === '7') start.setDate(start.getDate() - 6);
+    else if (dateRange === '30') start.setDate(start.getDate() - 29);
+    else if (dateRange === 'month') start.setDate(1);
+    return { start, end: new Date(startDateTomorrow(now)), days: Math.max(1, Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000) + 1) };
+  }, [dateRange]);
+
+  const periodOrders = useMemo(() => orders.filter(order => {
+    const date = toDate(order.createdAt);
+    return date && date >= period.start && date < period.end;
+  }), [orders, period]);
+
   const stats = useMemo(() => {
-    // Order value is not a payment settlement report. Exclude cancelled orders,
-    // and never imply that a customer-reported UPI payment is gateway-verified.
-    const openOrders = orders.filter(o => o.status !== 'cancelled');
+    // These totals are non-cancelled order value, not verified payment settlement.
+    const openOrders = periodOrders.filter(o => o.status !== 'cancelled');
     const orderValue = openOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const pending = orders.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status || 'pending')).length;
+    const pending = periodOrders.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status || 'pending')).length;
     const avgOrder = openOrders.length ? orderValue / openOrders.length : 0;
-    return { orderValue, totalOrders: orders.length, pending, avgOrder };
-  }, [orders]);
+    return { orderValue, totalOrders: periodOrders.length, pending, avgOrder };
+  }, [periodOrders]);
 
   const catalogStats = useMemo(() => {
     const hasPhoto = product => mediaUrls(product).length > 0 || (Array.isArray(product.imageIndexes) && product.imageIndexes.length > 0) || product.imageIndex !== undefined;
@@ -79,33 +96,34 @@ export default function AdminOverview() {
   }, [products, categoryImages, categories]);
 
   const chartData = useMemo(() => {
-    const days = 14;
-    const buckets = Array.from({ length: days }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (days - 1 - i));
+    const buckets = Array.from({ length: period.days }, (_, i) => {
+      const d = new Date(period.start);
+      d.setDate(period.start.getDate() + i);
       return { key: d.toDateString(), label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), revenue: 0 };
     });
     const byKey = Object.fromEntries(buckets.map(b => [b.key, b]));
-    orders.forEach(o => {
-      if (o.status === 'cancelled') return;
-      const key = toDate(o.createdAt).toDateString();
-      if (byKey[key]) byKey[key].revenue += Number(o.total) || 0;
+    periodOrders.forEach(order => {
+      if (order.status === 'cancelled') return;
+      const date = toDate(order.createdAt);
+      if (!date) return;
+      const bucket = byKey[new Date(date.getFullYear(), date.getMonth(), date.getDate()).toDateString()];
+      if (bucket) bucket.revenue += Number(order.total) || 0;
     });
     return buckets;
-  }, [orders]);
+  }, [period, periodOrders]);
 
   const topProducts = useMemo(() => {
     const map = new Map();
-    orders.filter(o => o.status !== 'cancelled').forEach(o => (o.items || []).forEach(item => {
+    periodOrders.filter(o => o.status !== 'cancelled').forEach(o => (o.items || []).forEach(item => {
       const entry = map.get(item.id) || { name: item.name, qty: 0, revenue: 0 };
       entry.qty += Number(item.quantity) || 0;
       entry.revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0);
       map.set(item.id, entry);
     }));
     return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  }, [orders]);
+  }, [periodOrders]);
 
-  const recentOrders = useMemo(() => orders.slice(0, 6), [orders]);
+  const recentOrders = useMemo(() => periodOrders.slice(0, 6), [periodOrders]);
 
   return (
     <div>
@@ -114,7 +132,16 @@ export default function AdminOverview() {
           <h1 className="font-display text-2xl font-bold text-slate-900">Overview</h1>
           <p className="text-sm text-slate-500">Real numbers from your Firestore orders — nothing here is simulated.</p>
         </div>
-        <button className="dash-btn-ghost" onClick={load} disabled={loading}><RefreshCw size={16} /> Refresh</button>
+        <div className="flex items-center gap-2">
+          <label className="sr-only" htmlFor="overview-date-range">Analytics date range</label>
+          <select id="overview-date-range" className="dash-field min-w-36" value={dateRange} onChange={event => setDateRange(event.target.value)}>
+            <option value="today">Today</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="month">This month</option>
+          </select>
+          <button className="dash-btn-ghost" onClick={load} disabled={loading}><RefreshCw size={16} /> Refresh</button>
+        </div>
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">Orders: {error}</div>}
@@ -155,7 +182,7 @@ export default function AdminOverview() {
 
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h2 className="mb-1 font-semibold text-slate-900">Non-cancelled order value · last 14 days</h2><p className="mb-4 text-xs text-slate-500">This is order value, not verified payment settlement.</p>
+              <h2 className="mb-1 font-semibold text-slate-900">Non-cancelled order value · {dateRange === 'today' ? 'today' : dateRange === '7' ? 'last 7 days' : dateRange === 'month' ? 'this month' : 'last 30 days'}</h2><p className="mb-4 text-xs text-slate-500">This is order value, not verified payment settlement.</p>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -218,7 +245,7 @@ export default function AdminOverview() {
                       <td className="py-2.5 pr-4">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[o.status] || statusColors.pending}`}>{o.status || 'pending'}</span>
                       </td>
-                      <td className="py-2.5 pr-4 text-slate-500">{toDate(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                      <td className="py-2.5 pr-4 text-slate-500">{toDate(o.createdAt)?.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) || '—'}</td>
                       <td className="py-2.5 text-right font-semibold text-slate-900">{money(o.total)}</td>
                     </tr>
                   ))}

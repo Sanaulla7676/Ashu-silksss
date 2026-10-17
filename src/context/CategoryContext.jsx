@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  FALLBACK_CATEGORIES, getCategorySettings, getCategoryImageSettings,
-  saveCategorySettings, saveCategoryImageSettings,
+  FALLBACK_CATEGORIES, saveCategorySettings, saveCategoryImageSettings,
+  subscribeToCategorySettings,
 } from '../services/categories';
 
 const CategoryContext = createContext(null);
@@ -19,15 +19,15 @@ export function CategoryProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getCategorySettings(), getCategoryImageSettings()])
-      .then(([list, images]) => {
-        if (!active) return;
-        if (list) setCategories(withRequiredCategories(list));
-        setCategoryImages(images || {});
-      })
-      .catch(error => console.warn('[categories] Could not load saved category settings.', error))
-      .finally(() => active && setLoaded(true));
-    return () => { active = false; };
+    const unsubscribe = subscribeToCategorySettings(({ list, images }) => {
+      if (!active) return;
+      if (list) setCategories(withRequiredCategories(list));
+      setCategoryImages(images || {});
+      setLoaded(true);
+    }, error => {
+      if (active) console.warn('[categories] Live settings subscription failed.', error);
+    });
+    return () => { active = false; unsubscribe?.(); };
   }, []);
 
   const value = useMemo(() => ({

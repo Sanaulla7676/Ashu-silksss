@@ -4,15 +4,41 @@ export const money = n => new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 }).format(Number(n || 0));
 
+function mediaKey(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    url.search = '';
+    url.hash = '';
+    if (/(^|\.)cloudinary\.com$/i.test(url.hostname)) {
+      const parts = url.pathname.split('/');
+      const uploadIndex = parts.indexOf('upload');
+      const versionIndex = parts.findIndex((part, index) => index > uploadIndex && /^v\d+$/.test(part));
+      if (uploadIndex >= 0 && versionIndex > uploadIndex) {
+        url.pathname = [...parts.slice(0, uploadIndex + 1), ...parts.slice(versionIndex)].join('/');
+      }
+    }
+    return url.origin + url.pathname;
+  } catch {
+    return raw.split(/[?#]/, 1)[0];
+  }
+}
+
 export const mediaUrls = product => {
   const media = product?.media;
-  if (Array.isArray(media)) {
-    return media.filter(url => typeof url === 'string' && url.trim()).map(url => url.trim());
+  const candidates = Array.isArray(media) ? media : typeof media === 'string' ? media.split(/\r?\n/) : [];
+  const seen = new Set();
+  const result = [];
+  for (const value of candidates) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const url = value.trim();
+    const key = mediaKey(url);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(url);
   }
-  if (typeof media === 'string') {
-    return media.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
-  }
-  return [];
+  return result;
 };
 
 export const mediaUrl = product => mediaUrls(product)[0] || '';

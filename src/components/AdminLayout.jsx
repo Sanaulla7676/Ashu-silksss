@@ -30,7 +30,7 @@ function SidebarLinks({ onNavigate }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              isActive ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              isActive ? 'bg-[#9f1239] text-white shadow-sm' : 'text-slate-600 hover:bg-rose-50 hover:text-[#9f1239]'
             }`
           }
         >
@@ -137,15 +137,15 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="admin-shell min-h-screen bg-[#faf6f7] text-slate-900">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-slate-900 py-5 lg:flex">
-        <Link to="/admin" className="mb-6 flex items-center gap-2 px-5 font-display text-lg font-bold text-white">
-          <Sparkles size={20} className="text-indigo-400" /> Ashu Silks
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-rose-100 bg-white py-5 shadow-sm lg:flex">
+        <Link to="/admin" className="mb-6 flex items-center gap-2 px-5 font-display text-lg font-bold text-[#9f1239]">
+          <Sparkles size={20} className="text-[#c89a3d]" /> Ashu Silks
         </Link>
         <SidebarLinks />
         <div className="mt-auto flex flex-col gap-1 px-3 pt-4">
-          <a href="/" target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white">
+          <a href="/" target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-[#9f1239]">
             <ExternalLink size={18} /> View live site
           </a>
           <button onClick={logout} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white">
@@ -164,12 +164,12 @@ export default function AdminLayout() {
               onClick={() => setDrawerOpen(false)}
             />
             <motion.aside
-              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-900 py-5 lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-rose-100 bg-white py-5 shadow-sm lg:hidden"
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'tween', duration: 0.22 }}
             >
               <div className="mb-6 flex items-center justify-between px-5">
                 <span className="flex items-center gap-2 font-display text-lg font-bold text-white"><Sparkles size={20} className="text-indigo-400" /> Ashu Silks</span>
-                <button onClick={() => setDrawerOpen(false)} className="text-slate-300"><X size={22} /></button>
+                <button onClick={() => setDrawerOpen(false)} className="text-slate-600"><X size={22} /></button>
               </div>
               <SidebarLinks onNavigate={() => setDrawerOpen(false)} />
               <div className="mt-auto flex flex-col gap-1 px-3 pt-4">
@@ -186,11 +186,11 @@ export default function AdminLayout() {
       </AnimatePresence>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-rose-100 bg-white/95 px-4 sm:px-6 backdrop-blur">
           <button className="text-slate-600 lg:hidden" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
             <Menu size={22} />
           </button>
-          <span className="font-display font-semibold text-slate-900">Admin Dashboard</span>
+          <span className="font-display font-semibold text-[#9f1239]">Admin Dashboard</span>
           <span className="ml-auto truncate text-sm text-slate-500">{user.email}</span>
         </header>
 

@@ -9,7 +9,7 @@ import ProductGrid from '../components/ProductGrid';
 import ProductGallery from '../components/ProductGallery';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
-import { fetchLiveProduct, fetchLiveProducts } from '../services/liveCatalog';
+import { subscribeToLiveProducts } from '../services/liveCatalog';
 import { createEnquiry } from '../services/firestore';
 import { generateEnquiryMessage, generateWhatsAppLink } from '../services/whatsapp';
 import { discountPercent, mediaUrls, money } from '../utils';
@@ -27,12 +27,23 @@ export default function ProductDetail() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchLiveProduct(id), fetchLiveProducts()]).then(([found, all]) => {
+    const unsubscribe = subscribeToLiveProducts(all => {
       if (!active) return;
+      const found = all.find(item => item.id === id || item.sku === id) || null;
       setProduct(found);
-      setRelated(found ? all.filter(p => p.id !== found.id && p.category === found.category && (Number(p.stock ?? 0) > 0 || p.stockOnRequest)).slice(0, 4) : []);
-    }).finally(() => active && setLoading(false));
-    return () => { active = false; };
+      setRelated(found ? all.filter(item =>
+        item.id !== found.id &&
+        item.category === found.category &&
+        (Number(item.stock ?? 0) > 0 || item.stockOnRequest)
+      ).slice(0, 4) : []);
+      setLoading(false);
+    }, error => {
+      if (active) {
+        console.warn('[product] Live catalogue subscription failed.', error);
+        setLoading(false);
+      }
+    });
+    return () => { active = false; unsubscribe?.(); };
   }, [id]);
 
   if (loading) {

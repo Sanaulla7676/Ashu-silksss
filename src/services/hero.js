@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, firebaseReady } from '../firebase';
 
 export async function getHeroSettings() {
@@ -10,4 +10,15 @@ export async function getHeroSettings() {
 export async function saveHeroSettings(hero) {
   if (!firebaseReady) throw new Error('Firebase is not configured.');
   await setDoc(doc(db, 'settings', 'hero'), { ...hero, updatedAt: serverTimestamp() });
+}
+
+
+export function subscribeToHeroSettings(onChange, onError = () => {}) {
+  if (!firebaseReady || !db) {
+    onChange(null);
+    return () => {};
+  }
+  return onSnapshot(doc(db, 'settings', 'hero'), snapshot => {
+    onChange(snapshot.exists() ? snapshot.data() : null);
+  }, onError);
 }
