@@ -6,7 +6,7 @@ const BATCH = 'import-2026-10-15';
 const PRODUCT_PHOTO_COUNTS = [1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 1, 1, 2, 1, 3, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 2, 3, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 1, 2, 2, 1, 3, 2, 2, 1, 1, 1, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1];
 
 function photoIndexesFor(sourceProductId) {
-  const match = String(sourceProductId || '').match(/(\\d+)/);
+  const match = String(sourceProductId || '').match(/(\d+)/);
   const productNumber = Number(match?.[1]);
   const productPosition = productNumber - 1;
   if (!Number.isInteger(productPosition) || productPosition < 0 || productPosition >= PRODUCT_PHOTO_COUNTS.length) return [];
