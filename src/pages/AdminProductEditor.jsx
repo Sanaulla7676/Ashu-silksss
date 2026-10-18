@@ -122,6 +122,13 @@ export default function AdminProductEditor() {
   }, [loading, initialized, loadError, productId, products, location.state, location.pathname, navigate]);
 
   const patch = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+  const guardUnsavedNavigation = event => {
+    if (dirty && !window.confirm('Discard your unsaved product changes?')) event.preventDefault();
+  };
+  const leaveEditor = () => {
+    if (dirty && !window.confirm('Discard your unsaved product changes?')) return;
+    navigate('/admin/products');
+  };
   const media = useMemo(() => lines(form.media), [form.media]);
   const images = useMemo(() => media.filter(url => !isVideoMedia(url)), [media]);
   const photoCount = productPhotoCount({ ...form, media });
@@ -233,14 +240,14 @@ export default function AdminProductEditor() {
   return <div className="mx-auto max-w-[1440px] pb-24">
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <Link to="/admin/products" className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-rose-800"><ArrowLeft size={16} /> Back to Products</Link>
+        <Link to="/admin/products" onClick={guardUnsavedNavigation} className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-rose-800"><ArrowLeft size={16} /> Back to Products</Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">{productId ? 'Edit product' : 'Add a product'}</h1>
           <span className={'rounded-full px-3 py-1 text-xs font-bold ' + (form.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{form.status === 'active' ? 'Live on storefront' : 'Draft · not visible'}</span>
         </div>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">Add details and real photos in one place. Save a draft first, or publish when pricing, stock and photos are ready.</p>
       </div>
-      <Link to="/admin/import" className="dash-btn-ghost inline-flex items-center gap-2"><ImagePlus size={16} /> Choose from photo library</Link>
+      <Link to="/admin/import" onClick={guardUnsavedNavigation} className="dash-btn-ghost inline-flex items-center gap-2"><ImagePlus size={16} /> Choose from photo library</Link>
     </div>
 
     {(error || loadError) && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800">{error || loadError}</div>}
@@ -327,7 +334,7 @@ export default function AdminProductEditor() {
         <section className="dash-card p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Storefront preview</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">Preview only</span></div><div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="aspect-[4/3] bg-amber-50"><ProductMedia url={cover} productName={form.name || 'Product name'} colour={form.colour} imageIndex={form.imageIndexes?.[0] ?? form.imageIndex} /></div><div className="p-3.5"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-800">{form.category || 'Product category'}</p><h3 className="mt-1 line-clamp-2 font-display text-lg font-semibold text-slate-900">{form.name || 'Product name appears here'}</h3><p className="mt-1 text-sm font-bold text-slate-900">{shownPrice}</p><p className="mt-1 text-xs text-slate-500">{form.colour || 'Colour not specified'}{form.fabric ? ' · ' + form.fabric : ''}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">SKU</span><b className="mt-1 block break-all text-slate-800">{form.sku || 'Not assigned'}</b></div><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">Stock</span><b className="mt-1 block text-slate-800">{form.stockOnRequest ? 'On enquiry' : (form.stock || '0') + ' units'}</b></div></div><div className="mt-3"><span className={'rounded-full px-2.5 py-1 text-xs font-semibold ' + (canPublish ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{canPublish ? 'Ready to publish' : 'Needs details'}</span></div></section>
       </aside>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] backdrop-blur lg:left-64 sm:px-6"><div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3"><div className="hidden text-sm text-slate-500 sm:block">{dirty ? 'Unsaved changes' : 'All changes saved'} · {photoCount} photo view(s)</div><div className="ml-auto flex flex-wrap justify-end gap-2"><button type="button" className="dash-btn-ghost" onClick={() => navigate('/admin/products')} disabled={busy || uploading}>Cancel</button><button type="button" className="dash-btn-ghost" onClick={() => save('draft')} disabled={busy || uploading || !firebaseReady}><Save size={16} /> Save draft</button><button type="button" className="dash-btn-primary" onClick={() => save('active')} disabled={busy || uploading || !firebaseReady}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}{busy ? 'Saving…' : (original?.status === 'active' ? 'Save & publish' : 'Publish product')}</button></div></div></div>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] backdrop-blur lg:left-64 sm:px-6"><div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3"><div className="hidden text-sm text-slate-500 sm:block">{dirty ? 'Unsaved changes' : 'All changes saved'} · {photoCount} photo view(s)</div><div className="ml-auto flex flex-wrap justify-end gap-2"><button type="button" className="dash-btn-ghost" onClick={leaveEditor} disabled={busy || uploading}>Cancel</button><button type="button" className="dash-btn-ghost" onClick={() => save('draft')} disabled={busy || uploading || !firebaseReady}><Save size={16} /> Save draft</button><button type="button" className="dash-btn-primary" onClick={() => save('active')} disabled={busy || uploading || !firebaseReady}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}{busy ? 'Saving…' : (original?.status === 'active' ? 'Save & publish' : 'Publish product')}</button></div></div></div>
     </form>
   </div>;
 }
