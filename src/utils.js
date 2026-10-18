@@ -41,6 +41,29 @@ export const mediaUrls = product => {
   return result;
 };
 
+export const isVideoMedia = url => /\.(mp4|webm|mov)(?:[?#]|$)/i.test(String(url || ''))
+  || String(url || '').includes('/video/upload/');
+
+function productImageIndexes(product) {
+  const indexes = Array.isArray(product?.imageIndexes) ? product.imageIndexes : [];
+  const unique = [...new Set(indexes.map(Number).filter(
+    index => Number.isInteger(index) && index >= 0 && index < 192
+  ))];
+  if (unique.length) return unique;
+  const single = Number(product?.imageIndex);
+  return product?.imageIndex !== undefined && Number.isInteger(single) && single >= 0 && single < 192
+    ? [single]
+    : [];
+}
+
+// Counts genuine image URLs and assigned atlas tiles without double-counting
+// the same product's fallback tiles when some of those photos are already URLs.
+export const productPhotoCount = product => {
+  const uploadedPhotoCount = mediaUrls(product).filter(url => !isVideoMedia(url)).length;
+  const fallbackPhotoCount = productImageIndexes(product).length;
+  return Math.max(uploadedPhotoCount, fallbackPhotoCount);
+};
+
 export const mediaUrl = product => mediaUrls(product)[0] || '';
 
 // Sarees photographed on the marble floor are shown on the same warm cream

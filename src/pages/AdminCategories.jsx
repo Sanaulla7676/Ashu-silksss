@@ -6,8 +6,9 @@ import { getAdminCatalogProducts, createCatalogProduct, updateCatalogProduct } f
 import { uploadCategoryImage, cloudinaryReady } from '../services/cloudinary';
 
 export default function AdminCategories() {
-  const { categories, categoryImages, saveCategories, saveCategoryImage, saveCategoryImages } = useCategories();
+  const { categories, categoryImages, saveCategories, saveCategoryImages } = useCategories();
   const [draft, setDraft] = useState(categories);
+  const [draftImages, setDraftImages] = useState(categoryImages);
   const [newName, setNewName] = useState('');
   const [renaming, setRenaming] = useState(null);
   const [renameTo, setRenameTo] = useState('');
@@ -17,6 +18,7 @@ export default function AdminCategories() {
   const [uploadingCategory, setUploadingCategory] = useState('');
 
   useEffect(() => { setDraft(categories); }, [categories]);
+  useEffect(() => { setDraftImages(categoryImages); }, [categoryImages]);
 
   const load = async () => {
     try { setProducts(await getAdminCatalogProducts()); }
@@ -34,7 +36,9 @@ export default function AdminCategories() {
     return map;
   }, [products]);
 
-  const dirty = draft.length !== categories.length || draft.some((c, i) => c !== categories[i]);
+  const dirty = draft.length !== categories.length
+    || draft.some((c, i) => c !== categories[i])
+    || JSON.stringify(draftImages) !== JSON.stringify(categoryImages);
 
   const add = () => {
     const name = newName.trim();
@@ -69,7 +73,8 @@ export default function AdminCategories() {
     setBusy(true); setError('');
     try {
       await saveCategories(draft);
-      toast.success('Categories saved and published');
+      await saveCategoryImages(draftImages);
+      toast.success('Categories and cover changes saved to the storefront');
     } catch (e) {
       setError(e.message);
     } finally { setBusy(false); }
@@ -82,8 +87,8 @@ export default function AdminCategories() {
     setUploadingCategory(name); setError('');
     try {
       const url = await uploadCategoryImage(file);
-      await saveCategoryImage(name, url);
-      toast.success(`${name} cover saved to the live storefront`);
+      setDraftImages(current => ({ ...current, [name]: url }));
+      toast.success(`${name} cover uploaded to draft. Click Save changes to publish it.`);
     } catch (e) {
       setError(e.message || `Could not save the ${name} cover.`);
     } finally { setUploadingCategory(''); }
@@ -92,8 +97,12 @@ export default function AdminCategories() {
   const removeCover = async name => {
     setUploadingCategory(name); setError('');
     try {
-      await saveCategoryImage(name, '');
-      toast.success(`${name} now uses its automatic product-photo cover`);
+      setDraftImages(current => {
+        const next = { ...current };
+        delete next[name];
+        return next;
+      });
+      toast.success(`${name} cover removed from the draft. Click Save changes to publish it.`);
     } catch (e) {
       setError(e.message || `Could not remove the ${name} cover.`);
     } finally { setUploadingCategory(''); }
@@ -122,11 +131,12 @@ export default function AdminCategories() {
         }
       }
       const next = draft.map((c, i) => (i === index ? to : c));
-      const nextImages = { ...categoryImages };
+      const nextImages = { ...draftImages };
       if (nextImages[from]) nextImages[to] = nextImages[from];
       delete nextImages[from];
       await saveCategoryImages(nextImages);
       await saveCategories(next);
+      setDraftImages(nextImages);
       setDraft(next);
       setRenaming(null);
       await load();
@@ -204,7 +214,7 @@ export default function AdminCategories() {
             <h2 className="font-semibold text-slate-900">Your categories ({draft.length})</h2>
             {dirty && <span className="text-xs font-semibold text-amber-600">Unsaved changes</span>}
           </div>
-          <p className="mb-3 text-xs leading-5 text-slate-500">Choose a cover image for each category. It updates the homepage collection tile immediately; without a custom cover, the store uses that category’s product photos.</p>
+          <p className="mb-3 text-xs leading-5 text-slate-500">Choose a cover image for each category. Uploads stay in this admin draft until you click Save changes; without a custom cover, the store uses that category’s product photos.</p>
           {!cloudinaryReady && <p role="alert" className="mb-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Image uploads are disabled because Cloudinary is not configured. Text and category ordering can still be saved.</p>}
 
           <div className="grid gap-2.5">
@@ -212,15 +222,15 @@ export default function AdminCategories() {
               <div key={`${name}-${i}`} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-3 sm:w-[220px] sm:shrink-0">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-amber-50">
-                    {categoryImages?.[name] ? <img src={categoryImages[name]} alt={`${name} cover`} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full flex-col items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500"><ImagePlus size={18} /><span>Auto cover</span></div>}
+                    {draftImages?.[name] ? <img src={draftImages[name]} alt={`${name} cover`} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full flex-col items-center justify-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500"><ImagePlus size={18} /><span>Auto cover</span></div>}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-slate-800">{categoryImages?.[name] ? 'Custom cover' : 'Product photo cover'}</p>
+                    <p className="truncate text-xs font-semibold text-slate-800">{draftImages?.[name] ? 'Custom cover (draft)' : 'Product photo cover'}</p>
                     <label className={`mt-1 inline-flex cursor-pointer items-center gap-1 text-xs font-semibold ${cloudinaryReady ? 'text-indigo-600 hover:underline' : 'cursor-not-allowed text-slate-400'}`}>
                       <Upload size={12} /> {uploadingCategory === name ? 'Saving…' : 'Upload cover'}
                       <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden disabled={!cloudinaryReady || Boolean(uploadingCategory) || busy} onChange={e => uploadCover(name, e)} />
                     </label>
-                    {categoryImages?.[name] && <button type="button" className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600" onClick={() => removeCover(name)} disabled={Boolean(uploadingCategory) || busy}><ImageOff size={12} /> Remove cover</button>}
+                    {draftImages?.[name] && <button type="button" className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600" onClick={() => removeCover(name)} disabled={Boolean(uploadingCategory) || busy}><ImageOff size={12} /> Remove cover</button>}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col">

@@ -9,11 +9,11 @@ import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
 import { PHOTO_UPDATES } from '../data/photo-updates';
 import { useCategories } from '../context/CategoryContext';
-import { mediaUrl, mediaUrls } from '../utils';
+import { mediaUrl, mediaUrls, productPhotoCount } from '../utils';
 import ProductMedia from '../components/ProductMedia';
 
 const empty = {
-  name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'active',
+  name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'draft',
   price: '', mrp: '', priceOnRequest: false, gstPercent: '5', stock: '', stockOnRequest: false,
   colour: '', fabric: '', pattern: '', occasion: '', workType: '', blousePiece: 'Included',
   sareeLength: '6.3 metres with blouse piece', washCare: 'Dry clean only', countryOfOrigin: 'India', weight: '',
@@ -120,11 +120,11 @@ export default function Admin() {
     setError('');
     const sellingPrice = Number(form.price || 0);
     const mrp = Number(form.mrp || sellingPrice);
-    if (!form.priceOnRequest && (!Number.isFinite(sellingPrice) || sellingPrice <= 0)) {
-      setError('Enter a selling price above ₹0, or turn on “Price on request”.');
+    if (form.status === 'active' && !form.priceOnRequest && (!Number.isFinite(sellingPrice) || sellingPrice <= 0)) {
+      setError('Enter a selling price above ₹0, or turn on “Price on request” before publishing. Drafts may keep price blank.');
       return;
     }
-    if (!form.priceOnRequest && mrp > 0 && mrp < sellingPrice) {
+    if (form.status === 'active' && !form.priceOnRequest && mrp > 0 && mrp < sellingPrice) {
       setError('MRP cannot be lower than the selling price.');
       return;
     }
@@ -138,17 +138,22 @@ export default function Admin() {
       setError('An active product needs a stock quantity above 0, or switch on “Availability on enquiry”. You can also keep it as a draft.');
       return;
     }
-    const hasImage = form.media.split(/\r?\n/).some(url => url.trim())
-      || (Array.isArray(form.imageIndexes) && form.imageIndexes.length > 0)
-      || form.imageIndex !== undefined;
-    if (form.status === 'active' && !hasImage) {
-      setError('Add at least one product photo before publishing. Products without photos can be saved as drafts.');
+    const currentPhotoCount = productPhotoCount(form);
+    if (form.status === 'active' && currentPhotoCount < 3) {
+      setError(`Add at least 3 distinct product photos before publishing. This product currently has ${currentPhotoCount}. Upload genuine views such as full drape, pallu/border and blouse/detail; do not reuse the same photo.`);
       return;
     }
     const duplicate = products.find(product => String(product.sku || '').toLowerCase() === sku.toLowerCase() && product.id !== editing);
     if (duplicate) {
       setError(`SKU ${sku} is already used by “${duplicate.name}”. Each product needs a unique SKU.`);
       return;
+    }
+
+    if (form.status === 'active') {
+      const message = editing
+        ? 'This product is Active. Saving will publish these changes to the live storefront immediately. Continue?'
+        : 'This will publish the product to the live storefront now. Continue?';
+      if (!window.confirm(message)) return;
     }
 
     setBusy(true);
@@ -171,7 +176,9 @@ export default function Admin() {
       else await createCatalogProduct(data);
       markImportedPhotoUrls(pendingImportUrls);
       setPendingImportUrls([]);
-      toast.success(editing ? 'Product saved to the live catalogue' : 'Product added to the live catalogue');
+      toast.success(form.status === 'active'
+        ? (editing ? 'Product changes published to the storefront' : 'Product published to the storefront')
+        : 'Product saved as a draft — it is not visible on the storefront');
       setForm(empty); setEditing(null); setEditingFallback(false); setPreview('');
       await load();
     } catch (e) { setError(readableAdminError(e)); }
@@ -348,10 +355,12 @@ export default function Admin() {
   };
 
   const draftProducts = products.filter(p => (p.status || 'active') === 'draft');
-  const photoCount = p => mediaUrls(p).length || (Array.isArray(p.imageIndexes) ? p.imageIndexes.length : (p.imageIndex !== undefined ? 1 : 0));
-  // Publish only products that have a usable image and explicit price/availability settings.
+  const photoCount = productPhotoCount;
+  const productsBelowPhotoMinimum = products.filter(p => photoCount(p) < 3);
+  const activeProductsBelowPhotoMinimum = productsBelowPhotoMinimum.filter(p => (p.status || 'active') === 'active');
+  // Publishing is blocked until the listing has three assigned product photos.
   const readyDrafts = draftProducts.filter(p =>
-    photoCount(p) > 0 && (p.priceOnRequest || Number(p.price) > 0) && (p.stockOnRequest || Number(p.stock ?? 0) > 0),
+    photoCount(p) >= 3 && (p.priceOnRequest || Number(p.price) > 0) && (p.stockOnRequest || Number(p.stock ?? 0) > 0),
   );
   const incompleteDrafts = draftProducts.filter(p => !readyDrafts.includes(p));
 
@@ -417,6 +426,22 @@ export default function Admin() {
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
+
+      {productsBelowPhotoMinimum.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <div className="flex items-start gap-3">
+            <ImagePlus size={19} className="mt-0.5 shrink-0" />
+            <div>
+              <b>Photo coverage needs attention: {productsBelowPhotoMinimum.length} product(s) have fewer than 3 photos.</b>
+              <p className="mt-1">
+                {activeProductsBelowPhotoMinimum.length} are currently active. Add three genuinely different views per saree
+                (full drape, pallu/border and blouse/detail). Existing active products stay live until you update them;
+                new products start as drafts, and publishing is blocked until three photo views are assigned.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingFixes.length > 0 && (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -601,7 +626,10 @@ export default function Admin() {
                 {form.imageIndexes.map((imageIndex, index) => <div key={imageIndex} className="aspect-[3/4] overflow-hidden rounded-lg border border-slate-200"><ProductMedia url="" productName={form.name} colour={form.colour} imageIndex={imageIndex} /><span className="sr-only">Fallback photo {index + 1}</span></div>)}
               </div>
             )}
-            <p className="text-xs text-slate-500">Upload several angles, review the thumbnail order, and remove any incorrect photo before saving.</p>
+            <p className="text-xs text-slate-600">
+              {productPhotoCount(form)} / 3 photo views assigned. Use different genuine angles: full drape, pallu/border and blouse/detail.
+              Images are not published with the product record until you save; newly created listings are drafts by default.
+            </p>
             <textarea className="dash-field min-h-20" placeholder="Image URLs, one per line" value={form.media} onChange={e => { set('media', e.target.value); setPreview(e.target.value.split(/\r?\n/).map(url => url.trim()).find(Boolean) || ''); }} />
             <input className="dash-field" placeholder="Video URL (optional)" value={form.video} onChange={e => set('video', e.target.value)} />
           </Section>
@@ -613,7 +641,9 @@ export default function Admin() {
           <div className="flex flex-wrap gap-2.5">
             <button type="button" className="dash-btn-ghost" onClick={clear}><X size={16} /> Clear</button>
             <button className="dash-btn-primary" disabled={busy || uploading || !firebaseReady}>
-              {editing ? <Save size={16} /> : <Plus size={16} />} {editing ? 'Save changes' : 'Add product'}
+              {editing ? <Save size={16} /> : <Plus size={16} />} {form.status === 'active'
+                ? (editing ? 'Save changes & publish' : 'Publish product')
+                : (editing ? 'Save draft' : 'Add as draft')}
             </button>
           </div>
         </form>

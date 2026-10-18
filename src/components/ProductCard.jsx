@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, BadgeCheck, Truck, MessageCircle } from 'lucide-react';
+import { Heart, ShoppingBag, BadgeCheck, Truck, MessageCircle } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import toast from 'react-hot-toast';
 import ProductMedia from './ProductMedia';
@@ -77,11 +77,13 @@ export default function ProductCard({ product }) {
         <div className="p-3">
           <p className="mb-1 line-clamp-2 min-h-[2.5em] text-[0.86rem] font-medium text-ink">{product.name}</p>
 
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 rounded-sm bg-success px-1.5 py-0.5 text-[0.72rem] font-bold text-white">
-              4.8 <Star size={10} fill="#fff" stroke="none" />
-            </span>
-            <span className="truncate text-[0.76rem] text-muted">{product.category}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.76rem] text-muted">
+            <span className="truncate">{product.category}</span>
+            {product.stockOnRequest
+              ? <span className="font-medium text-wine">Availability on enquiry</span>
+              : Number(product.stock ?? 0) > 0 && Number(product.stock ?? 0) <= 2
+                ? <span className="font-semibold text-danger">Only {Number(product.stock)} left</span>
+                : null}
           </div>
 
           <div className="mt-1.5 flex flex-wrap items-baseline gap-1.5">

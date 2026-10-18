@@ -1,4 +1,4 @@
-import { mediaUrls } from '../utils.js';
+import { mediaUrls, productPhotoCount } from '../utils.js';
 
 const HIDDEN_STATUSES = new Set(['draft', 'archived', 'inactive', 'hidden', 'deleted', 'unpublished']);
 const skuKey = product => String(product?.sku || '').trim().toLowerCase();
@@ -6,12 +6,7 @@ const statusOf = product => String(product?.status || 'active').trim().toLowerCa
 const isVisible = product => !HIDDEN_STATUSES.has(statusOf(product));
 
 export function fallbackPhotoCount(product) {
-  if (Array.isArray(product?.imageIndexes) && product.imageIndexes.length) {
-    return new Set(product.imageIndexes.map(Number).filter(Number.isFinite)).size;
-  }
-  const urls = mediaUrls(product);
-  if (urls.length) return urls.length;
-  return product?.imageIndex !== undefined && Number.isInteger(Number(product.imageIndex)) ? 1 : 0;
+  return productPhotoCount(product);
 }
 
 function normalizeProduct(product, isFallback = false) {
@@ -26,8 +21,8 @@ function normalizeProduct(product, isFallback = false) {
   }
   if (urls.length) {
     result.media = urls;
-    delete result.imageIndexes;
-    delete result.imageIndex;
+    // Keep assigned atlas tiles as supplemental gallery photos. The gallery
+    // renders these only after the uploaded photos, rather than dropping them.
     delete result.imagePending;
   }
   if (isFallback) {
@@ -83,20 +78,26 @@ export function mergeCatalogueProducts(liveProducts = [], fallbackProducts = [])
     const fallback = fallbackBySku.get(key);
     const merged = { ...(fallback || {}), ...product, id: product.id };
     const actualMedia = mediaUrls(product);
+    const supplementalIndexes = Array.isArray(product.imageIndexes) && product.imageIndexes.length
+      ? product.imageIndexes
+      : fallback?.imageIndexes;
+    const supplementalIndex = product.imageIndex !== undefined ? product.imageIndex : fallback?.imageIndex;
     if (actualMedia.length) {
       merged.media = actualMedia;
-      delete merged.imageIndexes;
-      delete merged.imageIndex;
+      if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
+      else delete merged.imageIndexes;
+      if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
       delete merged.imagePending;
     } else if (mediaUrls(fallback).length) {
       merged.media = mediaUrls(fallback);
-      delete merged.imageIndexes;
-      delete merged.imageIndex;
+      if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
+      else delete merged.imageIndexes;
+      if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
       delete merged.imagePending;
     } else {
       merged.media = [];
-      if (!Array.isArray(product.imageIndexes) && fallback?.imageIndexes) merged.imageIndexes = fallback.imageIndexes;
-      if (product.imageIndex === undefined && fallback?.imageIndex !== undefined) merged.imageIndex = fallback.imageIndex;
+      if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
+      if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
     }
     output.push(normalizeProduct(merged, false));
   }
