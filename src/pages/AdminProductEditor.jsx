@@ -126,7 +126,7 @@ export default function AdminProductEditor() {
 
   const patch = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
   const addCategory = async () => {
-    const name = newCategory.trim().replace(/\\s+/g, ' ');
+    const name = newCategory.trim().replace(/\s+/g, ' ');
     if (!name) return setError('Enter a category name first.');
     if (name.length > 60) return setError('Category names must be 60 characters or fewer.');
     if (categories.some(category => category.toLowerCase() === name.toLowerCase())) {
