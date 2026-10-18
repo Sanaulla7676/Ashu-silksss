@@ -75,7 +75,7 @@ export default function AdminProductEditor() {
   const { id: productId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { categories } = useCategories();
+  const { categories, saveCategories } = useCategories();
   const picker = useRef(null);
   const imported = useRef(Array.isArray(location.state?.importSourceUrls) ? location.state.importSourceUrls : []);
   const [products, setProducts] = useState([]);
@@ -91,6 +91,9 @@ export default function AdminProductEditor() {
   const [isFallback, setIsFallback] = useState(false);
   const [original, setOriginal] = useState(null);
   const [advanced, setAdvanced] = useState(false);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [categoryBusy, setCategoryBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
@@ -122,6 +125,30 @@ export default function AdminProductEditor() {
   }, [loading, initialized, loadError, productId, products, location.state, location.pathname, navigate]);
 
   const patch = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+  const addCategory = async () => {
+    const name = newCategory.trim().replace(/\s+/g, ' ');
+    if (!name) return setError('Enter a category name first.');
+    if (name.length > 60) return setError('Category names must be 60 characters or fewer.');
+    if (categories.some(category => category.toLowerCase() === name.toLowerCase())) {
+      patch('category', categories.find(category => category.toLowerCase() === name.toLowerCase()));
+      setNewCategory('');
+      setShowNewCategory(false);
+      toast('That category already exists, so I selected it.');
+      return;
+    }
+    setCategoryBusy(true); setError('');
+    try {
+      await saveCategories([...categories, name]);
+      patch('category', name);
+      setNewCategory('');
+      setShowNewCategory(false);
+      toast.success('Category created and selected.');
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setCategoryBusy(false);
+    }
+  };
   const guardUnsavedNavigation = event => {
     if (dirty && !window.confirm('Discard your unsaved product changes?')) event.preventDefault();
   };
@@ -265,7 +292,30 @@ export default function AdminProductEditor() {
               <input className="dash-field" autoFocus={!productId} required maxLength={120} placeholder="e.g. Maroon Kanjeevaram Silk Saree" value={form.name} onChange={event => patch('name', event.target.value)} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Category" required><select className="dash-field" value={form.category} onChange={event => patch('category', event.target.value)} required>{categoryOptions.map(category => <option key={category} value={category}>{category}</option>)}</select></Field>
+              <div className="min-w-0">
+                <div className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <Field label="Product category" required hint="Choose where shoppers will find this product. New categories can be created here.">
+                    <select className="dash-field" value={form.category} onChange={event => patch('category', event.target.value)} required>
+                      {categoryOptions.map(category => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </Field>
+                  <button type="button" className="dash-btn-ghost inline-flex items-center justify-center gap-1.5" onClick={() => setShowNewCategory(open => !open)} disabled={categoryBusy}>
+                    <Package size={15} /> {showNewCategory ? 'Cancel' : 'New category'}
+                  </button>
+                </div>
+                {showNewCategory && (
+                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/60 p-3">
+                    <p className="text-sm font-semibold text-slate-800">Create a category</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">It is saved to the store category list and selected for this product.</p>
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                      <input className="dash-field min-w-0 flex-1" maxLength={60} autoComplete="off" placeholder="e.g. Banarasi Silk" value={newCategory} onChange={event => setNewCategory(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategory(); } }} />
+                      <button type="button" className="dash-btn-primary inline-flex shrink-0 items-center justify-center gap-1.5" onClick={addCategory} disabled={categoryBusy || !newCategory.trim()}>
+                        {categoryBusy ? <LoaderCircle size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} {categoryBusy ? 'Saving…' : 'Create & select'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Field label="SKU / product code" required hint="Generate a unique SKU to avoid typing one manually.">
                 <div className="flex gap-2"><input className="dash-field min-w-0 flex-1" maxLength={64} placeholder="AS-KANJEEVARAM-01" value={form.sku} onChange={event => patch('sku', event.target.value)} required /><button type="button" className="dash-btn-ghost shrink-0 !px-3" onClick={() => patch('sku', uniqueSku(form.name, products))} title="Generate a unique SKU"><Sparkles size={15} /><span className="hidden sm:inline">Generate</span></button></div>
               </Field>
