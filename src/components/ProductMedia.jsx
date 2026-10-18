@@ -36,7 +36,7 @@ function atlasStyle(imageIndex) {
   };
 }
 
-export default function ProductMedia({ url, className = '', productName = '', colour = '', imageIndex }) {
+export default function ProductMedia({ url, className = '', productName = '', colour = '', imageIndex, priority = false, imageWidth, poster }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [url]);
 
@@ -73,6 +73,41 @@ export default function ProductMedia({ url, className = '', productName = '', co
 
   const video = /\.(mp4|webm|mov)(\?|$)/i.test(url) || url.includes('/video/upload/');
   const base = `h-full w-full object-cover ${className}`;
-  if (video) return <video className={base} src={url} muted playsInline loop autoPlay onError={() => setFailed(true)} />;
-  return <img className={base} src={productImage(url)} alt={productName || ''} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+  const reducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const saveData = typeof navigator !== 'undefined' && Boolean(navigator.connection?.saveData);
+  const avoidAutoplay = reducedMotion || saveData;
+
+  // On data-saver/reduced-motion devices, show the lightweight poster instead
+  // of forcing a hero video download. The poster stays visible during startup.
+  if (video && priority && poster && avoidAutoplay) {
+    return <img className={base} src={poster} alt={productName || 'Ashu Silks collection'} loading="eager" fetchPriority="high" decoding="async" />;
+  }
+  if (video) {
+    return (
+      <video
+        className={base}
+        src={url}
+        poster={poster}
+        muted
+        playsInline
+        loop={priority}
+        autoPlay={priority && !avoidAutoplay}
+        controls={!priority}
+        preload={priority ? 'metadata' : 'none'}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <img
+      className={base}
+      src={productImage(url, imageWidth || (priority ? 1400 : 720))}
+      alt={productName || ''}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : 'auto'}
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
 }
