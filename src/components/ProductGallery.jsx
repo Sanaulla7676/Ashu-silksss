@@ -53,10 +53,10 @@ export default function ProductGallery({ media = [], badge, productName = '', co
       <div className="relative overflow-hidden rounded-md bg-gold-2/25 shadow-[var(--shadow-lift)]">
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
-            {images.map(({ url, imageIndex: tileIndex, key }) => (
+            {images.map(({ url, imageIndex: tileIndex, key }, i) => (
               <div className="min-w-0 flex-[0_0_100%]" key={key}>
                 <div className="aspect-[3/4] w-full">
-                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={tileIndex ?? imageIndex} />
+                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={tileIndex ?? imageIndex} priority={i === selected} imageWidth={1200} />
                 </div>
               </div>
             ))}

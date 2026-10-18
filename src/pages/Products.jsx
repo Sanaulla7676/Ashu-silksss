@@ -162,7 +162,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
   const [imageFailed, setImageFailed] = useState(false);
   const wished = isInWishlist(product.id);
   const badges = badgeFor(product, newIds);
-  const images = mediaUrls(product).map(productImage);
+  const images = mediaUrls(product).map(url => productImage(url, index < 2 ? 800 : 640));
   const imageIndexes = Array.isArray(product.imageIndexes) ? product.imageIndexes : [];
   const secondImage = images[1];
   const secondImageIndex = imageIndexes[1];
@@ -184,7 +184,7 @@ function PremiumProductCard({ product, index, newIds, onQuickView }) {
               <ProductMedia url="" productName={product.name} colour={product.colour} imageIndex={product.imageIndex} />
             </div>
           ) : (
-            <motion.img src={images[0]} alt={product.name} loading="lazy"
+            <motion.img src={images[0]} alt={product.name} loading={index < 2 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'auto'} decoding="async"
               onLoad={() => setLoaded(true)}
               onError={() => { setImageFailed(true); setLoaded(true); }}
               animate={{ scale: hovered ? 1.045 : 1, opacity: !loaded ? 0 : (secondImage && hovered ? 0 : 1) }}

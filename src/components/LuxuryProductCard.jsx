@@ -47,7 +47,7 @@ function FadeImage({ url, className = '', product, imageIndex }) {
 
   return (
     <img
-      src={productImage(url)}
+      src={productImage(url, 720)}
       alt=""
       loading="lazy"
       decoding="async"

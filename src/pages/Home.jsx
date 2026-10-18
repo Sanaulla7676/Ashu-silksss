@@ -161,6 +161,22 @@ export default function Home() {
   const [subscribing, setSubscribing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [quickView, setQuickView] = useState(null);
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
+
+  // Bring shoppers back to products they explored on a previous visit.
+  useEffect(() => {
+    if (!allProducts.length) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('ashu_recently_viewed_ids') || '[]');
+      const ids = Array.isArray(stored) ? stored.filter(value => typeof value === 'string') : [];
+      setRecentlyViewedProducts(ids
+        .map(id => allProducts.find(product => product.id === id))
+        .filter(Boolean)
+        .slice(0, 4));
+    } catch {
+      setRecentlyViewedProducts([]);
+    }
+  }, [allProducts]);
 
   // Thin progress bar tracking how far down the page you are.
   const { scrollYProgress: pageProgress } = useScroll();
@@ -250,7 +266,7 @@ export default function Home() {
         <div className="absolute inset-0">
           <motion.div className="h-full w-full" style={{ scale: heroScale }}>
             <div className="as-kenburns h-full w-full">
-              <ProductMedia url={hero.url} imageIndex={hero.imageIndex ?? 0} />
+              <ProductMedia url={hero.url} imageIndex={hero.imageIndex ?? 0} priority imageWidth={1600} poster="/products/maroon-bandhani-zari-01.jpg" />
             </div>
           </motion.div>
           <div
@@ -513,6 +529,37 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
+
+        {/* RETURNING SHOPPERS: resume product discovery without searching again. */}
+        {recentlyViewedProducts.length > 0 && (
+          <section className="pb-[54px] pt-4 lg:pb-[72px]" aria-labelledby="recently-viewed-heading">
+            <div className="container">
+              <SectionHeading
+                kicker="Pick up where you left off"
+                title="Recently Viewed"
+                action={
+                  <Link to="/products" className="group shrink-0 text-[10px] underline underline-offset-[5px] sm:text-[12px]">
+                    Browse all <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  </Link>
+                }
+              />
+              <motion.div
+                variants={staggerFast}
+                {...inView}
+                className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4"
+              >
+                {recentlyViewedProducts.map(product => (
+                  <LuxuryProductCard
+                    key={product.id}
+                    product={product}
+                    badge="Recently viewed"
+                    onQuickView={setQuickView}
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </section>
+        )}
 
         {/* ALL PRODUCTS */}
         {(loading || orderedProducts.length > 0) && (

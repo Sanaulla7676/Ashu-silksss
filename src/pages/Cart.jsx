@@ -1,14 +1,23 @@
 import { Link } from 'react-router-dom';
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../hooks/useCart';
+import { useWishlist } from '../hooks/useWishlist';
 import { mediaUrl, money, productImage } from '../utils';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, getTotal } = useCart();
+  const { addToWishlist, isInWishlist } = useWishlist();
   const delivery = cart.length ? 99 : 0;
   const total = getTotal();
+
+  const saveForLater = item => {
+    if (!isInWishlist(item.id)) addToWishlist(item.id);
+    removeFromCart(item.id);
+    toast.success('Saved to your wishlist for later');
+  };
 
   return (
     <>
@@ -32,7 +41,7 @@ export default function Cart() {
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_380px]">
               <div className="grid gap-3.5">
                 <AnimatePresence initial={false}>
-                  {cart.map(item => (
+                  {cart.map((item, index) => (
                     <motion.div
                       className="grid grid-cols-[76px_1fr] items-start gap-4 rounded-md border border-ink/10 bg-paper p-3.5 sm:grid-cols-[92px_1fr_auto_auto] sm:items-center"
                       key={item.id}
@@ -41,11 +50,18 @@ export default function Cart() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                     >
-                      <img className="h-24 w-[76px] rounded object-cover sm:h-[116px] sm:w-[92px]" src={productImage(mediaUrl(item))} alt="" />
+                      <img className="h-24 w-[76px] rounded object-cover sm:h-[116px] sm:w-[92px]" src={productImage(mediaUrl(item), 360)} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} decoding="async" alt={item.name} />
                       <div>
                         <Link to={`/product/${item.id}`}><h3 className="text-[0.95rem] font-medium text-ink hover:text-wine sm:text-base">{item.name}</h3></Link>
                         <p className="my-1 text-sm text-muted">{item.category} · {item.fabric}</p>
                         <b className="text-ink">{money(item.price)}</b>
+                        <button
+                          type="button"
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-wine"
+                          onClick={() => saveForLater(item)}
+                        >
+                          <Heart size={13} /> Save for later
+                        </button>
                       </div>
                       <div className="col-span-2 mt-2 flex items-center justify-between gap-2 sm:col-span-1 sm:mt-0 sm:justify-self-start">
                         <div className="flex items-center gap-2 rounded-full border border-ink/10 bg-ivory p-1">

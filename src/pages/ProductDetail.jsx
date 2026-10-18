@@ -111,6 +111,21 @@ export default function ProductDetail() {
     toast(wished ? 'Removed from wishlist' : 'Saved to wishlist', { icon: wished ? '💔' : '❤️' });
   };
 
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, url: window.location.href });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Product link copied');
+      } else {
+        toast.error('Sharing is not supported in this browser.');
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') toast.error('Could not share product link.');
+    }
+  };
+
   return (
     <>
       <Breadcrumbs items={[{ label: 'Products', to: '/products' }, { label: product.name }]} />
@@ -210,10 +225,18 @@ export default function ProductDetail() {
               <button className="btn-ghost" onClick={handleWishlist}>
                 <Heart size={18} fill={wished ? 'var(--color-gold)' : 'none'} stroke={wished ? 'var(--color-gold)' : 'currentColor'} /> Wishlist
               </button>
-              <button className="btn-ghost" onClick={() => navigator.share?.({ title: product.name, url: location.href })}>
+              <button className="btn-ghost" onClick={handleShare}>
                 <Share2 size={18} /> Share
               </button>
             </div>
+            <a
+              href={generateWhatsAppLink(`Hello Ashu Silks! I’m interested in ${product.name} (SKU: ${product.sku || 'not listed'}). ${product.priceOnRequest ? 'Could you share the price and availability?' : 'Could you confirm availability and delivery details?'}`)}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded border border-[#25D366]/35 bg-[#25D366]/10 px-4 py-3 text-center text-sm font-bold text-[#157347] transition-colors hover:bg-[#25D366]/15"
+            >
+              <MessageCircle size={17} /> Need help choosing? Chat with our saree team
+            </a>
           </motion.div>
         </div>
       </section>
