@@ -45,12 +45,10 @@ function persistablePayload(product) {
   delete data.isFallbackProduct;
   if (Object.prototype.hasOwnProperty.call(data, 'media')) {
     data.media = mediaUrls({ media: data.media });
-    if (data.media.length) {
-      delete data.imageIndexes;
-      delete data.imageIndex;
-      delete data.imagePending;
-    }
   }
+  // Keep assigned catalogue/atlas photos as supplemental product views.
+  // Uploading new photos must not silently erase an existing gallery.
+  delete data.imagePending;
   return data;
 }
 
