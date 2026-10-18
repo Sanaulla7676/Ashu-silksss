@@ -28,7 +28,7 @@ export default function AdminImport() {
   const createFromSelected = () => {
     if (!selected.length) return;
     // Mark these URLs as used only after the product form saves successfully.
-    navigate('/admin/products', { state: { media: selected, importSourceUrls: selected } });
+    navigate('/admin/products/new', { state: { media: selected, importSourceUrls: selected } });
   };
 
   return (
