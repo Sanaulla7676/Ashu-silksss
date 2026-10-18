@@ -247,7 +247,6 @@ export default function Admin() {
     return matchesSearch && matchesCategory && matchesStatus;
   };
   const baseProducts = products.filter(matchesBaseFilters);
-  const hasPrice = product => Boolean(product.priceOnRequest) || (Number.isFinite(Number(product.price)) && Number(product.price) > 0);
   const hasAnyPrice = product => Number.isFinite(Number(product.price)) && Number(product.price) > 0;
   const isLowStock = product => !product.stockOnRequest && Number(product.stock ?? 0) > 0 && Number(product.stock ?? 0) <= 3;
   const isOutOfStock = product => !product.stockOnRequest && Number(product.stock ?? 0) <= 0;
