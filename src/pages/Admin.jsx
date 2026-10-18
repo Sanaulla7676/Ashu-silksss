@@ -250,13 +250,15 @@ export default function Admin() {
   const setStockDraft = (id, v) => setStockDrafts(d => ({ ...d, [id]: v }));
   const saveStock = async p => {
     const value = Number(stockDrafts[p.id]);
-    if (Number.isNaN(value) || value < 0) { toast.error('Enter a valid stock number'); return; }
+    if (!Number.isInteger(value) || value < 0) { toast.error('Enter a whole-number stock quantity of zero or more.'); return; }
+    setBusy(true);
     try {
       await saveCatalogFields(p, { stock: value, stockOnRequest: false });
-      toast.success(`${p.name || 'Product'} stock updated`);
+      toast.success((p.name || 'Product') + ' stock updated');
       setStockDrafts(d => { const next = { ...d }; delete next[p.id]; return next; });
       await load();
-    } catch (e) { toast.error(e.message); }
+    } catch (e) { toast.error(readableAdminError(e)); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -373,7 +375,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 gap-2.5 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_minmax(150px,0.6fr)_minmax(120px,0.4fr)]">
             <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3">
               <Search size={16} className="shrink-0 text-slate-400" />
-              <input className="min-w-0 flex-1 py-2 text-sm outline-none" placeholder="Search name, SKU or colour" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <input className="min-w-0 flex-1 py-2 text-sm outline-none" placeholder="Search name, SKU, material or tags" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </label>
             <select className="dash-field" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} aria-label="Filter by category">
               <option value="All">All categories</option>
