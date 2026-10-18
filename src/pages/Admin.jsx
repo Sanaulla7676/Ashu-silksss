@@ -50,6 +50,7 @@ export default function Admin() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [qualityFilter, setQualityFilter] = useState('all');
 
   const load = async () => {
     setBusy(true); setError('');
@@ -237,13 +238,36 @@ export default function Admin() {
     } finally { setBusy(false); }
   };
 
-  const visibleProducts = products.filter(product => {
+  const matchesBaseFilters = product => {
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch = !q || [product.name, product.sku, product.category, product.colour, product.fabric, product.pattern, product.workType, product.description, ...(Array.isArray(product.tags) ? product.tags : [product.tags])]
       .some(value => String(value || '').toLowerCase().includes(q));
     const matchesCategory = categoryFilter === 'All' || product.category === categoryFilter;
     const matchesStatus = statusFilter === 'All' || (product.status || 'active') === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
+  };
+  const baseProducts = products.filter(matchesBaseFilters);
+  const hasPrice = product => Boolean(product.priceOnRequest) || (Number.isFinite(Number(product.price)) && Number(product.price) > 0);
+  const hasAnyPrice = product => Number.isFinite(Number(product.price)) && Number(product.price) > 0;
+  const isLowStock = product => !product.stockOnRequest && Number(product.stock ?? 0) > 0 && Number(product.stock ?? 0) <= 3;
+  const isOutOfStock = product => !product.stockOnRequest && Number(product.stock ?? 0) <= 0;
+  const qualityOptions = [
+    { id: 'all', label: 'All products', count: baseProducts.length },
+    { id: 'single-photo', label: 'Exactly 1 photo', count: baseProducts.filter(product => photoCount(product) === 1).length },
+    { id: 'needs-photos', label: 'Needs photos (<3)', count: baseProducts.filter(product => photoCount(product) < 3).length },
+    { id: 'missing-price', label: 'Missing price', count: baseProducts.filter(product => !product.priceOnRequest && !hasAnyPrice(product)).length },
+    { id: 'low-stock', label: 'Low stock (1–3)', count: baseProducts.filter(isLowStock).length },
+    { id: 'out-of-stock', label: 'Out of stock', count: baseProducts.filter(isOutOfStock).length },
+    { id: 'price-on-request', label: 'Price on request', count: baseProducts.filter(product => product.priceOnRequest).length },
+  ];
+  const visibleProducts = baseProducts.filter(product => {
+    if (qualityFilter === 'single-photo') return photoCount(product) === 1;
+    if (qualityFilter === 'needs-photos') return photoCount(product) < 3;
+    if (qualityFilter === 'missing-price') return !product.priceOnRequest && !hasAnyPrice(product);
+    if (qualityFilter === 'low-stock') return isLowStock(product);
+    if (qualityFilter === 'out-of-stock') return isOutOfStock(product);
+    if (qualityFilter === 'price-on-request') return Boolean(product.priceOnRequest);
+    return true;
   });
 
   const stockValue = p => stockDrafts[p.id] ?? String(p.stock ?? 0);
@@ -385,6 +409,23 @@ export default function Admin() {
               <option value="All">All statuses</option><option value="active">Active</option><option value="draft">Draft</option>
             </select>
           </div>
+          <div className="mt-3 flex flex-wrap gap-2" aria-label="Product health filters">
+            {qualityOptions.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={qualityFilter === option.id}
+                onClick={() => setQualityFilter(option.id)}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${qualityFilter === option.id ? 'border-rose-800 bg-rose-800 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-rose-300 hover:bg-rose-50'}`}
+              >
+                {option.label}
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${qualityFilter === option.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>{option.count}</span>
+              </button>
+            ))}
+            {(qualityFilter !== 'all' || searchQuery || categoryFilter !== 'All' || statusFilter !== 'All') && (
+              <button type="button" className="px-2 py-2 text-xs font-semibold text-rose-800 hover:underline" onClick={() => { setQualityFilter('all'); setSearchQuery(''); setCategoryFilter('All'); setStatusFilter('All'); }}>Clear filters</button>
+            )}
+          </div>
           {visibleProducts.map(p => (
             <article className="flex flex-col items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between" key={p.id}>
               <div className="flex min-w-0 items-start gap-3">
@@ -397,6 +438,9 @@ export default function Admin() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {p.status === 'active' ? 'Active' : 'Draft'}
                     </span>
+                    {photoCount(p) === 1 && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-800">1 photo</span>}
+                    {!p.priceOnRequest && !hasAnyPrice(p) && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800">Price missing</span>}
+                    {isLowStock(p) && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">Low stock · {Number(p.stock)} left</span>}
                     {p.status === 'active' && !p.stockOnRequest && Number(p.stock ?? 0) <= 0 && (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Hidden — 0 stock</span>
                     )}
