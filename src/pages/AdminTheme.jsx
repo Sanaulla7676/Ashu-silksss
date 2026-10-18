@@ -10,6 +10,16 @@ export default function AdminTheme() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { setDraft(theme); }, [theme]);
+
+  useEffect(() => {
+    const id = 'ashu-admin-theme-font-library';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Poppins:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700;800&family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
+  }, []);
   useEffect(() => {
     previewTheme(draft);
     return () => clearPreview();
