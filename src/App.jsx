@@ -24,6 +24,7 @@ const Auth = lazy(() => import('./pages/Auth'));
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const AdminOverview = lazy(() => import('./pages/AdminOverview'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AdminProductEditor = lazy(() => import('./pages/AdminProductEditor'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 const AdminHero = lazy(() => import('./pages/AdminHero'));
@@ -120,6 +121,8 @@ export default function App() {
 
                 <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<AdminOverview />} />
+                  <Route path="products/new" element={<AdminProductEditor />} />
+                  <Route path="products/:id/edit" element={<AdminProductEditor />} />
                   <Route path="products" element={<Admin />} />
                   <Route path="import" element={<AdminImport />} />
                   <Route path="bulk-import" element={<AdminBulkImport />} />
