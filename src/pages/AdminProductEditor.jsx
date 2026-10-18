@@ -11,7 +11,7 @@ import { isVideoMedia, mediaUrls, productPhotoCount } from '../utils';
 
 const EMPTY = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'draft',
-  price: '', mrp: '', priceOnRequest: false, gstPercent: '5', stock: '1', stockOnRequest: false,
+  price: '', mrp: '', priceOnRequest: false, gstPercent: '5', stock: '', stockOnRequest: false,
   colour: '', fabric: '', pattern: '', occasion: '', workType: '', blousePiece: 'Included',
   sareeLength: '6.3 metres with blouse piece', washCare: 'Dry clean only', countryOfOrigin: 'India',
   weight: '', description: '', highlights: '', tags: '', media: '', video: '', featured: false, imageIndexes: [],
@@ -26,6 +26,7 @@ function toForm(product) {
   const urls = mediaUrls(product);
   return {
     ...EMPTY, ...product,
+    status: product.status || 'active',
     media: urls.filter(url => !isVideoMedia(url)).join('\n'),
     video: String(product.video || urls.find(isVideoMedia) || ''),
     highlights: Array.isArray(product.highlights) ? product.highlights.join('\n') : String(product.highlights || ''),
