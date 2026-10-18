@@ -36,9 +36,8 @@ export function CategoryProvider({ children }) {
     loaded,
     async saveCategories(next) {
       const cleaned = withRequiredCategories(next);
-      const images = await saveCategorySettings(cleaned);
+      await saveCategorySettings(cleaned);
       setCategories(cleaned);
-      setCategoryImages(images || {});
       return cleaned;
     },
     async saveCategoryImages(next) {
