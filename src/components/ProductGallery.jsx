@@ -56,7 +56,65 @@ export default function ProductGallery({ media = [], badge, productName = '', co
             {images.map(({ url, imageIndex: tileIndex, key }) => (
               <div className="min-w-0 flex-[0_0_100%]" key={key}>
                 <div className="aspect-[3/4] w-full">
-                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={tileIndex ?? imageIndex} />
+                  import { useCallback, useEffect, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
+import ProductMedia from './ProductMedia';
+import { isVideoMedia } from '../utils';
+
+export default function ProductGallery({ media = [], badge, productName = '', colour = '', imageIndex, imageIndexes = [] }) {
+  const indexedCandidates = Array.isArray(imageIndexes) ? imageIndexes : [];
+  const validIndexes = [...new Set(indexedCandidates.map(Number).filter(
+    index => Number.isInteger(index) && index >= 0 && index < 192
+  ))];
+  const fallbackIndexes = validIndexes.length
+    ? validIndexes
+    : (imageIndex !== undefined && Number.isInteger(Number(imageIndex)) && Number(imageIndex) >= 0
+      ? [Number(imageIndex)]
+      : []);
+
+  const mediaItems = media
+    .filter(url => typeof url === 'string' && url.trim())
+    .map((url, i) => ({ url, imageIndex: undefined, key: `media-${i}-${url}` }));
+  const uploadedPhotoCount = mediaItems.filter(item => !isVideoMedia(item.url)).length;
+  const supplementalItems = fallbackIndexes.slice(uploadedPhotoCount)
+    .map(index => ({ url: '', imageIndex: index, key: `atlas-${index}` }));
+  const combinedItems = [...mediaItems, ...supplementalItems];
+  const images = combinedItems.length
+    ? combinedItems
+    : [{ url: '', imageIndex, key: 'placeholder' }];
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: images.length > 1 });
+  const [selected, setSelected] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+
+  const onSelect = useCallback(() => {
+    if (emblaApi) setSelected(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    return () => emblaApi.off('select', onSelect);
+  }, [emblaApi, onSelect]);
+
+  useEffect(() => {
+    setSelected(0);
+    emblaApi?.scrollTo(0, true);
+  }, [emblaApi, images.length]);
+
+  const activeImage = images[Math.min(selected, images.length - 1)] || images[0];
+
+  return (
+    <div>
+      <div className="relative overflow-hidden rounded-md bg-gold-2/25 shadow-[var(--shadow-lift)]">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {images.map(({ url, imageIndex: tileIndex, key }) => (
+              <div className="min-w-0 flex-[0_0_100%]" key={key}>
+                <div className="aspect-[3/4] w-full">
+                  <ProductMedia url={url} productName={productName} colour={colour} imageIndex={tileIndex ?? imageIndex} priority={i === selected} imageWidth={1200} />
                 </div>
               </div>
             ))}
