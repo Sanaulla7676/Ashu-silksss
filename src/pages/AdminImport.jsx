@@ -13,7 +13,7 @@ const loadUsed = () => {
 export default function AdminImport() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
-  const [used, setUsed] = useState(loadUsed);
+  const [used] = useState(loadUsed);
   const [hideUsed, setHideUsed] = useState(false);
   const [failedUrls, setFailedUrls] = useState([]);
 
@@ -81,7 +81,7 @@ export default function AdminImport() {
                   src={p.url}
                   alt={p.file || 'Imported product photo'}
                   className="h-full w-full object-cover"
-                  loading="eager"
+                  loading="lazy"
                   decoding="async"
                   onError={() => setFailedUrls(current => current.includes(p.url) ? current : [...current, p.url])}
                 />
