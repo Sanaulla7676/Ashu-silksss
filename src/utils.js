@@ -66,19 +66,43 @@ export const productPhotoCount = product => {
 
 export const mediaUrl = product => mediaUrls(product)[0] || '';
 
-// Sarees photographed on the marble floor are shown on the same warm cream
-// backdrop as the studio shoot of 2026-08-31. Cloudinary cuts the saree out
-// at delivery time, so the uploaded original is untouched and this is
-// reversible by deleting the transformation. Photos already taken in the
-// studio keep their own backdrop — cutting them out would remove the props
-// styled beside the saree.
-const STUDIO_BACKDROP = 'c_limit,w_1200/e_background_removal/b_rgb:f9e6cb/q_auto';
+// Optimize Cloudinary delivery separately from the stored original: modern formats,
+// automatic quality and a width cap reduce transfer size without changing catalogue data.
+// The product backdrop treatment remains reversible and is skipped for studio/import photos.
 const ALREADY_ON_CREAM = /\/ashu-silks\/products\/(import-\d{4}-\d{2}-\d{2}|studio-)/;
 
-export const productImage = url => {
-  if (!url || !/\/image\/upload\/v\d+\/ashu-silks\/products\//.test(url)) return url;
-  if (ALREADY_ON_CREAM.test(url)) return url;
-  return url.replace('/image/upload/', `/image/upload/${STUDIO_BACKDROP}/`);
+export const productImage = (url, requestedWidth = 900) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!/^https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//i.test(url)) return url;
+
+  const width = Math.max(320, Math.min(1600, Math.round(Number(requestedWidth) || 900)));
+  let parsed;
+  try { parsed = new URL(url); } catch { return url; }
+
+  const parts = parsed.pathname.split('/');
+  const uploadIndex = parts.indexOf('upload');
+  if (uploadIndex < 0) return url;
+  const versionIndex = parts.findIndex((part, index) => index > uploadIndex && /^v\d+$/.test(part));
+  if (versionIndex < 0) return url;
+
+  let transformations = parts.slice(uploadIndex + 1, versionIndex);
+  const assetPath = parts.slice(versionIndex).join('/');
+  const hasExistingTransform = transformations.length > 0;
+  if (!hasExistingTransform) transformations = [`f_auto,q_auto:good,c_limit,w_${width}`];
+
+  const isProductPhoto = /\/ashu-silks\/products\//.test(parsed.pathname);
+  const alreadyHasBackgroundTreatment = transformations.some(part => part.includes('e_background_removal'))
+    || parts.slice(uploadIndex + 1, versionIndex).includes('e_background_removal');
+  if (isProductPhoto && !ALREADY_ON_CREAM.test(parsed.pathname) && !alreadyHasBackgroundTreatment) {
+    transformations = [...transformations, 'e_background_removal', 'b_rgb:f9e6cb'];
+  }
+
+  parsed.pathname = [
+    ...parts.slice(0, uploadIndex + 1),
+    ...transformations,
+    ...assetPath.split('/'),
+  ].join('/');
+  return parsed.toString();
 };
 
 export const discountPercent = (price, mrp) => {
