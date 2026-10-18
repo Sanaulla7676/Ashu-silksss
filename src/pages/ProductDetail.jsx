@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Heart, MessageCircle, Share2, ShoppingBag, Star, Truck, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Heart, MessageCircle, Share2, ShoppingBag, Truck, ShieldCheck, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -12,7 +12,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { subscribeToLiveProducts } from '../services/liveCatalog';
 import { createEnquiry } from '../services/firestore';
 import { generateEnquiryMessage, generateWhatsAppLink } from '../services/whatsapp';
-import { discountPercent, mediaUrls, money } from '../utils';
+import { discountPercent, mediaUrls, money, productPhotoCount } from '../utils';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -20,6 +20,7 @@ export default function ProductDetail() {
   const { addToWishlist, isInWishlist } = useWishlist();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [sent, setSent] = useState(false);
@@ -27,6 +28,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     let active = true;
+    let recordedProductId = null;
     const unsubscribe = subscribeToLiveProducts(all => {
       if (!active) return;
       const found = all.find(item => item.id === id || item.sku === id) || null;
@@ -36,6 +38,21 @@ export default function ProductDetail() {
         item.category === found.category &&
         (Number(item.stock ?? 0) > 0 || item.stockOnRequest)
       ).slice(0, 4) : []);
+      if (found && recordedProductId !== found.id) {
+        recordedProductId = found.id;
+        try {
+          const stored = JSON.parse(localStorage.getItem('ashu_recently_viewed_ids') || '[]');
+          const previousIds = Array.isArray(stored) ? stored.filter(value => typeof value === 'string') : [];
+          const viewedIds = [found.id, ...previousIds.filter(value => value !== found.id)].slice(0, 6);
+          localStorage.setItem('ashu_recently_viewed_ids', JSON.stringify(viewedIds));
+          setRecentlyViewed(all
+            .filter(item => item.id !== found.id && viewedIds.includes(item.id))
+            .sort((a, b) => viewedIds.indexOf(a.id) - viewedIds.indexOf(b.id))
+            .slice(0, 4));
+        } catch {
+          setRecentlyViewed([]);
+        }
+      }
       setLoading(false);
     }, error => {
       if (active) {
@@ -97,7 +114,7 @@ export default function ProductDetail() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Products', to: '/products' }, { label: product.name }]} />
-      <section className="pb-16 pt-2 md:pb-24">
+      <section className="pb-28 pt-2 md:pb-24">
         <div className="container grid grid-cols-1 gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <ProductGallery
@@ -137,9 +154,9 @@ export default function ProductDetail() {
           >
             <span className="eyebrow">{product.category}</span>
             <h1 className="heading-xl text-[clamp(1.8rem,4vw,2.6rem)]">{product.name}</h1>
-            <div className="mt-2.5 flex flex-wrap items-center gap-4 text-[0.96rem] text-muted">
-              <span className="flex items-center gap-1 rounded-sm bg-success px-1.5 py-0.5 text-[0.8rem] font-bold text-white">4.8 <Star size={12} fill="#fff" stroke="none" /></span>
-              <span>SKU: {product.sku}</span>
+            <div className="mt-2.5 flex flex-wrap items-center gap-3 text-[0.86rem] text-muted">
+              {product.sku && <span>SKU: {product.sku}</span>}
+              <span>{productPhotoCount(product)} product photo{productPhotoCount(product) === 1 ? '' : 's'}</span>
             </div>
             <p className="lead mt-4">{product.description}</p>
             {Array.isArray(product.highlights) && product.highlights.length > 0 && (
@@ -180,6 +197,11 @@ export default function ProductDetail() {
             <div className="mt-5 flex items-center gap-2 rounded bg-success-bg p-3.5 font-extrabold text-success">
               <CheckCircle size={18} /> {product.stockOnRequest ? 'Availability confirmed on enquiry' : `${product.stock} pieces available in store`}
             </div>
+            {!product.stockOnRequest && Number(product.stock) > 0 && Number(product.stock) <= 3 && (
+              <p className="mt-2 text-sm font-semibold text-wine">
+                Only {Number(product.stock)} left in the current stock count.
+              </p>
+            )}
             <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {!product.priceOnRequest && (
                 <button className="btn-primary" onClick={handleAdd}><ShoppingBag size={18} /> Add to Cart</button>
@@ -196,6 +218,24 @@ export default function ProductDetail() {
         </div>
       </section>
 
+      <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-ink/10 bg-paper/95 px-3 py-3 shadow-[0_-8px_24px_rgba(20,15,12,0.1)] backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-muted">{product.name}</p>
+            <p className="truncate text-sm font-bold text-wine">{product.priceOnRequest ? 'Price on request' : money(product.price)}</p>
+          </div>
+          {product.priceOnRequest ? (
+            <button className="btn-dark min-h-11 shrink-0 px-4!" onClick={() => setEnquiryOpen(true)}>
+              <MessageCircle size={16} /> Enquire
+            </button>
+          ) : (
+            <button className="btn-primary min-h-11 shrink-0 px-4!" onClick={handleAdd}>
+              <ShoppingBag size={16} /> Add to Cart
+            </button>
+          )}
+        </div>
+      </div>
+
       {related.length > 0 && (
         <section className="bg-gradient-to-br from-paper to-white py-16 md:py-24">
           <div className="container">
@@ -204,6 +244,18 @@ export default function ProductDetail() {
               <h2 className="heading-xl">Related sarees</h2>
             </div>
             <ProductGrid products={related} />
+          </div>
+        </section>
+      )}
+
+      {recentlyViewed.length > 0 && (
+        <section className="bg-paper py-12 md:py-16">
+          <div className="container">
+            <div className="mb-6">
+              <span className="eyebrow">Continue browsing</span>
+              <h2 className="heading-xl">Recently viewed</h2>
+            </div>
+            <ProductGrid products={recentlyViewed} />
           </div>
         </section>
       )}
