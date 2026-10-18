@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Package, Plus, Trash2, RefreshCw, Save, Upload, X, ImagePlus, Sparkles, FolderTree, Eye, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAdminCatalogProducts, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../services/catalog';
-import { uploadProductImage, cloudinaryReady } from '../services/cloudinary';
 import { firebaseReady } from '../firebase';
 import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
@@ -32,14 +31,6 @@ function persistableProduct(product) {
   return data;
 }
 
-function markImportedPhotoUrls(urls) {
-  if (!urls?.length) return;
-  try {
-    const old = JSON.parse(localStorage.getItem(IMPORT_USED_KEY) || '[]');
-    localStorage.setItem(IMPORT_USED_KEY, JSON.stringify([...new Set([...old, ...urls])]));
-  } catch { /* Product save succeeds even if this browser-only convenience marker fails. */ }
-}
-
 function readableAdminError(error) {
   const message = error?.message || 'An unexpected error occurred.';
   if (error?.code === 'permission-denied' || /missing or insufficient permissions|permission denied/i.test(message)) {
@@ -49,33 +40,16 @@ function readableAdminError(error) {
 }
 
 
-function Section({ title, children }) {
-  return (
-    <div className="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
-      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">{title}</h3>
-      <div className="grid gap-3">{children}</div>
-    </div>
-  );
-}
-
 export default function Admin() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { categories } = useCategories();
   const [products, setProducts] = useState([]);
-  const [form, setForm] = useState(empty);
-  const [editing, setEditing] = useState(null);
-  const [editingFallback, setEditingFallback] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState('');
   const [stockDrafts, setStockDrafts] = useState({});
   const [priceDrafts, setPriceDrafts] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [pendingImportUrls, setPendingImportUrls] = useState([]);
 
   const load = async () => {
     setBusy(true); setError('');
@@ -84,121 +58,6 @@ export default function Admin() {
     finally { setBusy(false); }
   };
   useEffect(() => { load(); }, []);
-
-  useEffect(() => {
-    const incomingMedia = location.state?.media;
-    const sourceUrls = location.state?.importSourceUrls;
-    if (sourceUrls?.length) setPendingImportUrls(sourceUrls);
-    if (incomingMedia?.length) {
-      setEditing(null);
-      setEditingFallback(false);
-      setForm({ ...empty, media: incomingMedia.join('\n') });
-      setPreview(incomingMedia[0]);
-      toast.success(`${incomingMedia.length} photo(s) attached — review details and save the product`);
-      navigate(location.pathname, { replace: true, state: null });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
-
-  const set = (k, v) => setForm(x => ({ ...x, [k]: v }));
-
-  const chooseFiles = async e => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setUploading(true); setError('');
-    try {
-      const urls = [];
-      for (const file of files) urls.push(await uploadProductImage(file, editing || 'new'));
-      setForm(x => ({ ...x, media: [x.media, ...urls].filter(Boolean).join('\n') }));
-      if (urls[0]) setPreview(urls[0]);
-    } catch (e) { setError(readableAdminError(e)); }
-    finally { setUploading(false); e.target.value = ''; }
-  };
-
-  const save = async e => {
-    e.preventDefault();
-    setError('');
-    const sellingPrice = Number(form.price || 0);
-    const mrp = Number(form.mrp || sellingPrice);
-    if (form.status === 'active' && !form.priceOnRequest && (!Number.isFinite(sellingPrice) || sellingPrice <= 0)) {
-      setError('Enter a selling price above ₹0, or turn on “Price on request” before publishing. Drafts may keep price blank.');
-      return;
-    }
-    if (form.status === 'active' && !form.priceOnRequest && mrp > 0 && mrp < sellingPrice) {
-      setError('MRP cannot be lower than the selling price.');
-      return;
-    }
-    const stock = Number(form.stock || 0);
-    const sku = String(form.sku || '').trim();
-    if (!sku) {
-      setError('A SKU is required. Use a unique product code so edits update the correct product.');
-      return;
-    }
-    if (form.status === 'active' && !form.stockOnRequest && (!Number.isFinite(stock) || stock <= 0)) {
-      setError('An active product needs a stock quantity above 0, or switch on “Availability on enquiry”. You can also keep it as a draft.');
-      return;
-    }
-    const currentPhotoCount = productPhotoCount(form);
-    if (form.status === 'active' && currentPhotoCount < 3) {
-      setError(`Add at least 3 distinct product photos before publishing. This product currently has ${currentPhotoCount}. Upload genuine views such as full drape, pallu/border and blouse/detail; do not reuse the same photo.`);
-      return;
-    }
-    const duplicate = products.find(product => String(product.sku || '').toLowerCase() === sku.toLowerCase() && product.id !== editing);
-    if (duplicate) {
-      setError(`SKU ${sku} is already used by “${duplicate.name}”. Each product needs a unique SKU.`);
-      return;
-    }
-
-    if (form.status === 'active') {
-      const message = editing
-        ? 'This product is Active. Saving will publish these changes to the live storefront immediately. Continue?'
-        : 'This will publish the product to the live storefront now. Continue?';
-      if (!window.confirm(message)) return;
-    }
-
-    setBusy(true);
-    try {
-      const media = form.media.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-      const videoUrl = String(form.video || '').trim();
-      if (videoUrl && !media.includes(videoUrl)) media.push(videoUrl);
-      const highlights = form.highlights.split('\n').map(x => x.trim()).filter(Boolean);
-      const tags = form.tags.split(',').map(x => x.trim()).filter(Boolean);
-      const data = {
-        ...persistableProduct(form), media, highlights, tags,
-        sku: String(form.sku).trim(),
-        price: sellingPrice, mrp,
-        priceOnRequest: Boolean(form.priceOnRequest),
-        gstPercent: Number(form.gstPercent || 0), stock: Number(form.stock),
-        weight: Number(form.weight || 0), featured: Boolean(form.featured),
-      };
-      if (editing && editingFallback) await createCatalogProduct(data);
-      else if (editing) await updateCatalogProduct(editing, data);
-      else await createCatalogProduct(data);
-      markImportedPhotoUrls(pendingImportUrls);
-      setPendingImportUrls([]);
-      toast.success(form.status === 'active'
-        ? (editing ? 'Product changes published to the storefront' : 'Product published to the storefront')
-        : 'Product saved as a draft — it is not visible on the storefront');
-      setForm(empty); setEditing(null); setEditingFallback(false); setPreview('');
-      await load();
-    } catch (e) { setError(readableAdminError(e)); }
-    finally { setBusy(false); }
-  };
-
-  const edit = p => {
-    setEditing(p.id);
-    setEditingFallback(Boolean(p.isStaticFallback));
-    const media = mediaUrls(p).join('\n');
-    const highlights = Array.isArray(p.highlights) ? p.highlights.join('\n') : (p.highlights || '');
-    const tags = Array.isArray(p.tags) ? p.tags.join(', ') : (p.tags || '');
-    setForm({
-      ...empty, ...p, media, highlights, tags,
-      price: String(p.price ?? ''), mrp: String(p.mrp ?? ''), stock: String(p.stock ?? '0'),
-      gstPercent: String(p.gstPercent ?? '5'), weight: String(p.weight ?? ''),
-    });
-    setPreview(mediaUrl(p));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const saveCatalogFields = async (product, changes) => {
     if (product.isStaticFallback) {
@@ -244,8 +103,6 @@ export default function Admin() {
     } catch (e) { setError(readableAdminError(e)); }
     finally { setBusy(false); }
   };
-
-  const clear = () => { setEditing(null); setEditingFallback(false); setForm(empty); setPreview(''); setPendingImportUrls([]); };
 
   // Reviewed products whose name, description or category is still unapplied.
   const pendingFixes = CATALOGUE_FIXES.filter(fix => {
@@ -380,16 +237,9 @@ export default function Admin() {
     } finally { setBusy(false); }
   };
 
-  const formMediaUrls = form.media.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
-  const removeFormMedia = url => {
-    const next = formMediaUrls.filter(item => item !== url);
-    set('media', next.join('\n'));
-    if (preview === url) setPreview(next[0] || '');
-  };
-
   const visibleProducts = products.filter(product => {
     const q = searchQuery.trim().toLowerCase();
-    const matchesSearch = !q || [product.name, product.sku, product.category, product.colour]
+    const matchesSearch = !q || [product.name, product.sku, product.category, product.colour, product.fabric, product.pattern, product.workType, product.description, ...(Array.isArray(product.tags) ? product.tags : [product.tags])]
       .some(value => String(value || '').toLowerCase().includes(q));
     const matchesCategory = categoryFilter === 'All' || product.category === categoryFilter;
     const matchesStatus = statusFilter === 'All' || (product.status || 'active') === statusFilter;
@@ -422,7 +272,7 @@ export default function Admin() {
           <h1 className="font-display text-2xl font-bold text-slate-900">Products</h1>
           <p className="text-sm text-slate-500">Manage catalogue, stock, pricing and images. Active products appear when they have stock above 0 or availability is set to on enquiry.</p>
         </div>
-        <button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button>
+        <div className="flex flex-wrap items-center gap-2"><Link to="/admin/import" className="dash-btn-ghost inline-flex items-center gap-2"><ImagePlus size={16} /> Import photos</Link><Link to="/admin/products/new" className="dash-btn-primary inline-flex items-center gap-2"><Plus size={16} /> Add product</Link><button className="dash-btn-ghost" onClick={load} disabled={busy}><RefreshCw size={16} /> Refresh</button></div>
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-medium text-red-700">{error}</div>}
@@ -512,142 +362,7 @@ export default function Admin() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.15fr)]">
-        <form className="dash-card grid gap-5 p-5" onSubmit={save}>
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold text-slate-900"><Package size={18} /> {editing ? 'Edit product' : 'Add product'}</h2>
-            {form.status === 'draft' && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">Draft — not visible on site</span>}
-          </div>
-
-          <Section title="Basic info">
-            <input className="dash-field" required placeholder="Product title" value={form.name} onChange={e => set('name', e.target.value)} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" placeholder="Brand" value={form.brand} onChange={e => set('brand', e.target.value)} />
-              <select className="dash-field" required value={form.category} onChange={e => set('category', e.target.value)}>
-                {/* Keep a product's own category selectable even if it was removed
-                    from the list, so editing never silently reassigns it. */}
-                {(categories.includes(form.category) ? categories : [form.category, ...categories])
-                  .filter(Boolean)
-                  .map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" required placeholder="SKU" value={form.sku} onChange={e => set('sku', e.target.value)} />
-              <select className="dash-field" value={form.status} onChange={e => set('status', e.target.value)}>
-                <option value="draft">Draft (hidden)</option>
-                <option value="active">Active (public)</option>
-              </select>
-            </div>
-          </Section>
-
-          <Section title="Pricing, tax & stock">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" required={!form.priceOnRequest} type="number" min={form.priceOnRequest ? '0' : '1'} step="1" placeholder="Selling price (₹)" value={form.price} onChange={e => set('price', e.target.value)} />
-              <input className="dash-field" type="number" min="0" step="1" placeholder="MRP (₹)" value={form.mrp} onChange={e => set('mrp', e.target.value)} />
-            </div>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
-              <input type="checkbox" checked={Boolean(form.priceOnRequest)} onChange={e => set('priceOnRequest', e.target.checked)} className="mt-1 h-4 w-4 accent-indigo-600" />
-              <span>
-                <span className="block text-sm font-semibold text-slate-800">Display “Price on request”</span>
-                <span className="mt-0.5 block text-xs leading-5 text-slate-500">Turn this off after entering a confirmed selling price. This controls the price shown to customers.</span>
-              </span>
-            </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" type="number" min="0" step="0.1" placeholder="GST %" value={form.gstPercent} onChange={e => set('gstPercent', e.target.value)} />
-              <input className="dash-field" required type="number" min="0" step="1" placeholder="Stock quantity" value={form.stock} onChange={e => set('stock', e.target.value)} />
-            </div>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
-              <input
-                type="checkbox"
-                checked={Boolean(form.stockOnRequest)}
-                onChange={e => set('stockOnRequest', e.target.checked)}
-                className="mt-1 h-4 w-4 accent-indigo-600"
-              />
-              <span>
-                <span className="block text-sm font-semibold text-slate-800">Availability on enquiry</span>
-                <span className="mt-0.5 block text-xs leading-5 text-slate-500">Use when the exact available quantity is not confirmed. The product can be listed without displaying a made-up stock count.</span>
-              </span>
-            </label>
-          </Section>
-
-          <Section title="Saree details">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" placeholder="Colour" value={form.colour} onChange={e => set('colour', e.target.value)} />
-              <input className="dash-field" placeholder="Fabric" value={form.fabric} onChange={e => set('fabric', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <select className="dash-field" value={form.pattern} onChange={e => set('pattern', e.target.value)}>
-                <option value="">Pattern...</option>
-                {patternOptions.map(p => <option key={p}>{p}</option>)}
-              </select>
-              <input className="dash-field" placeholder="Occasion" value={form.occasion} onChange={e => set('occasion', e.target.value)} />
-            </div>
-            <input className="dash-field" placeholder="Ornamentation / work (e.g. Zari, Hand embroidery)" value={form.workType} onChange={e => set('workType', e.target.value)} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <select className="dash-field" value={form.blousePiece} onChange={e => set('blousePiece', e.target.value)}>
-                {blouseOptions.map(b => <option key={b}>{b}</option>)}
-              </select>
-              <input className="dash-field" placeholder="Saree length" value={form.sareeLength} onChange={e => set('sareeLength', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input className="dash-field" placeholder="Wash care" value={form.washCare} onChange={e => set('washCare', e.target.value)} />
-              <input className="dash-field" placeholder="Country of origin" value={form.countryOfOrigin} onChange={e => set('countryOfOrigin', e.target.value)} />
-            </div>
-            <input className="dash-field" type="number" min="0" placeholder="Weight (grams)" value={form.weight} onChange={e => set('weight', e.target.value)} />
-          </Section>
-
-          <Section title="Description & search">
-            <textarea className="dash-field min-h-24" placeholder="Full description" value={form.description} onChange={e => set('description', e.target.value)} />
-            <textarea className="dash-field min-h-20" placeholder="Highlights — one per line (e.g. Pure Kanjeevaram silk, Contrast zari border)" value={form.highlights} onChange={e => set('highlights', e.target.value)} />
-            <input className="dash-field" placeholder="Search tags, comma separated" value={form.tags} onChange={e => set('tags', e.target.value)} />
-          </Section>
-
-          <Section title="Images & video">
-            {!cloudinaryReady && (
-              <p className="text-sm font-semibold text-red-600">Cloudinary is not configured — paste image URLs directly below.</p>
-            )}
-            <label className={`dash-btn-ghost inline-flex ${cloudinaryReady ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-              <Upload size={16} />{uploading ? 'Uploading...' : 'Choose images'}
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={chooseFiles} disabled={uploading || !cloudinaryReady} />
-            </label>
-            {formMediaUrls.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {formMediaUrls.map((url, index) => (
-                  <div key={`${url}-${index}`} className="relative aspect-[3/4] overflow-hidden rounded-lg border border-slate-200 bg-amber-50">
-                    <ProductMedia url={url} productName={`${form.name || 'Product'} photo ${index + 1}`} colour={form.colour} imageIndex={form.imageIndexes?.[index] ?? form.imageIndex} />
-                    <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-white">{index + 1}</span>
-                    <button type="button" className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-white/95 text-slate-800 shadow-sm hover:bg-red-50 hover:text-red-600" aria-label={`Remove product photo ${index + 1}`} onClick={() => removeFormMedia(url)}><X size={13} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!formMediaUrls.length && editing && form.imageIndexes?.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {form.imageIndexes.map((imageIndex, index) => <div key={imageIndex} className="aspect-[3/4] overflow-hidden rounded-lg border border-slate-200"><ProductMedia url="" productName={form.name} colour={form.colour} imageIndex={imageIndex} /><span className="sr-only">Fallback photo {index + 1}</span></div>)}
-              </div>
-            )}
-            <p className="text-xs text-slate-600">
-              {productPhotoCount(form)} / 3 photo views assigned. Use different genuine angles: full drape, pallu/border and blouse/detail.
-              Images are not published with the product record until you save; newly created listings are drafts by default.
-            </p>
-            <textarea className="dash-field min-h-20" placeholder="Image URLs, one per line" value={form.media} onChange={e => { set('media', e.target.value); setPreview(e.target.value.split(/\r?\n/).map(url => url.trim()).find(Boolean) || ''); }} />
-            <input className="dash-field" placeholder="Video URL (optional)" value={form.video} onChange={e => set('video', e.target.value)} />
-          </Section>
-
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" checked={!!form.featured} onChange={e => set('featured', e.target.checked)} /> Featured on homepage
-          </label>
-
-          <div className="flex flex-wrap gap-2.5">
-            <button type="button" className="dash-btn-ghost" onClick={clear}><X size={16} /> Clear</button>
-            <button className="dash-btn-primary" disabled={busy || uploading || !firebaseReady}>
-              {editing ? <Save size={16} /> : <Plus size={16} />} {form.status === 'active'
-                ? (editing ? 'Save changes & publish' : 'Publish product')
-                : (editing ? 'Save draft' : 'Add as draft')}
-            </button>
-          </div>
-        </form>
-
+      <div className="grid gap-5">
         <div className="grid content-start gap-2.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-semibold text-slate-900">Products ({visibleProducts.length}{visibleProducts.length !== products.length ? ` of ${products.length}` : ''})</h2>
@@ -712,7 +427,7 @@ export default function Admin() {
                 </div>
               </div>
               <div className="flex w-full items-center gap-2 sm:w-auto">
-                <button className="dash-btn-ghost" onClick={() => edit(p)}>Edit</button>
+                <Link className="dash-btn-ghost inline-flex items-center justify-center" to={"/admin/products/" + encodeURIComponent(p.id) + "/edit"}>Edit</Link>
                 <button className="dash-btn-danger" onClick={() => remove(p)} aria-label={p.isFallbackProduct ? 'Hide fallback product' : 'Delete product'} title={p.isFallbackProduct ? 'Hide product so its fallback cannot reappear' : 'Delete product'}><Trash2 size={16} /></button>
               </div>
             </article>
