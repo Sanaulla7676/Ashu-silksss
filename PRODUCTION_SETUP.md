@@ -63,7 +63,44 @@ The repository ignores `node_modules`, `dist`, `.vercel`, local environment file
 
 For a real admin dashboard, use Firebase custom claims or another server-controlled authorization mechanism. Do not trust a client-editable profile field for admin privileges. Setting the `admin: true` custom claim requires a one-time script run locally with the Firebase Admin SDK and a service account key — never ship that key to the frontend or commit it.
 
-## 8. Final production checks
+## 8. Grant a store administrator safely
+
+Firebase Authentication sign-in and store-admin authorization are intentionally separate. The admin panel and Firestore rules require the server-controlled custom claim `admin: true`. Do not add a client-side switch, Firestore profile field, or public endpoint that lets a user grant their own privileges.
+
+The repository includes `scripts/grant-admin-claim.mjs`, a one-time local utility. Run it only from a trusted computer using credentials for a Firebase project administrator.
+
+1. Confirm the target user is the approved store owner/admin and has verified their email.
+2. Open Firebase Console → Project settings → General and note the Firebase project ID.
+3. Install the Admin SDK locally without adding it to the storefront bundle:
+
+   ```bash
+   npm install --no-save firebase-admin
+   ```
+
+4. Authenticate the local process with a privileged service account/Google Application Default Credentials. If using a service-account JSON key, keep it **outside the repository** and set `GOOGLE_APPLICATION_CREDENTIALS` to that local file. Never upload the key to GitHub, Vercel, or the browser.
+5. Set the project ID and explicitly confirm the intended account.
+
+   **Windows PowerShell:**
+   ```powershell
+   $env:FIREBASE_PROJECT_ID = "your-firebase-project-id"
+   $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\\secure\\firebase-admin-service-account.json"
+   node scripts/grant-admin-claim.mjs --email "ashu@gmail.com" --confirm
+   ```
+
+   **macOS/Linux:**
+   ```bash
+   export FIREBASE_PROJECT_ID="your-firebase-project-id"
+   export GOOGLE_APPLICATION_CREDENTIALS="$HOME/secure/firebase-admin-service-account.json"
+   node scripts/grant-admin-claim.mjs --email "ashu@gmail.com" --confirm
+   ```
+
+   Replace the project ID and email with the values you have verified. The script prints the Firebase UID and preserves existing custom claims while adding `admin: true`. Without `--confirm`, it only previews the target and makes no changes.
+
+6. After the script reports success, sign out from Ashu Silks and sign in again. The dashboard refreshes the token when checking permissions. Firestore rules intentionally remain restricted to users with the admin claim.
+
+Official Firebase guide: https://firebase.google.com/docs/auth/admin/custom-claims
+
+## 9. Final production checks
 
 - Enable Firebase Email/Password authentication.
 - Deploy Firestore rules.
