@@ -29,7 +29,6 @@ const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminTheme = lazy(() => import('./pages/AdminTheme'));
 const AdminHero = lazy(() => import('./pages/AdminHero'));
 const AdminTeam = lazy(() => import('./pages/AdminTeam'));
-const AdminImport = lazy(() => import('./pages/AdminImport'));
 const AdminBulkImport = lazy(() => import('./pages/AdminBulkImport'));
 const AdminCategories = lazy(() => import('./pages/AdminCategories'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
@@ -124,7 +123,8 @@ export default function App() {
                   <Route path="products/new" element={<AdminProductEditor />} />
                   <Route path="products/:id/edit" element={<AdminProductEditor />} />
                   <Route path="products" element={<Admin />} />
-                  <Route path="import" element={<AdminImport />} />
+                  {/* Preserve old bookmarks while retiring the legacy photo-library page. */}
+                  <Route path="import" element={<Navigate to="/admin/bulk-import" replace />} />
                   <Route path="bulk-import" element={<AdminBulkImport />} />
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="hero" element={<AdminHero />} />

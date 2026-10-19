@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-do
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, Palette, Image as ImageIcon, Users, Sparkles as ImportIcon,
-  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree, MessageSquare, Images, BarChart3, Plus,
+  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree, MessageSquare, Images, BarChart3, Plus, Copy, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,7 +16,6 @@ const NAV = [
   { to: '/admin/enquiries', label: 'Enquiries', icon: MessageSquare },
   { to: '/admin/media', label: 'Media Library', icon: Images },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/admin/import', label: 'Import Photos', icon: ImportIcon },
   { to: '/admin/bulk-import', label: 'Bulk Import', icon: ImportIcon },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
   { to: '/admin/hero', label: 'Hero Content', icon: ImageIcon },
@@ -67,6 +66,7 @@ export default function AdminLayout() {
   const [permissionError, setPermissionError] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [accountActionError, setAccountActionError] = useState('');
+  const [uidCopyMessage, setUidCopyMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -88,6 +88,16 @@ export default function AdminLayout() {
     }
     return () => { active = false; };
   }, [user, loading]);
+
+  const copyFirebaseUid = async () => {
+    setUidCopyMessage('');
+    try {
+      await navigator.clipboard.writeText(user.uid);
+      setUidCopyMessage('Firebase UID copied.');
+    } catch {
+      setUidCopyMessage('Clipboard access was blocked. Copy the UID shown below manually.');
+    }
+  };
 
   const switchAccount = async () => {
     setAccountActionError('');
@@ -128,8 +138,25 @@ export default function AdminLayout() {
         title={permissionError ? 'Could not verify admin access' : 'Signed in, but admin permission is missing'}
         text={
           <>
-            <p>Firebase authenticated <b>{user.email || 'this account'}</b>, but this account does not have the required <code className="rounded bg-slate-100 px-1.5 py-0.5">admin=true</code> permission.</p>
-            <p className="mt-2">Use the original store-owner account. Creating a new customer account will not grant admin access. If this is the correct owner account, the Firebase project administrator must grant its admin custom claim, then you must sign in again.</p>
+            <p>Firebase authenticated <b>{user.email || 'this account'}</b>, but the token does not contain the required <code className="rounded bg-slate-100 px-1.5 py-0.5">admin=true</code> permission.</p>
+            <p className="mt-2">This is an authorization issue, not a password/login failure. A new Firebase Authentication user does not automatically become a store administrator.</p>
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2 font-semibold text-slate-800"><ShieldCheck size={16} className="text-rose-700" /> Authenticated Firebase UID</span>
+                <button type="button" onClick={copyFirebaseUid} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"><Copy size={13} /> Copy UID</button>
+              </div>
+              <code className="mt-2 block break-all rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700">{user.uid}</code>
+              {uidCopyMessage && <p role="status" className="mt-2 text-xs font-semibold text-emerald-700">{uidCopyMessage}</p>}
+            </div>
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left">
+              <p className="font-semibold text-amber-950">Grant admin access securely</p>
+              <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-amber-950">
+                <li>Confirm this is an approved store-owner/admin account.</li>
+                <li>Run the one-time <code>scripts/grant-admin-claim.mjs</code> setup script from a trusted computer using Firebase Admin credentials. Full steps are in <code>PRODUCTION_SETUP.md</code>.</li>
+                <li>After it succeeds, sign out, sign in again, and reopen the admin panel.</li>
+              </ol>
+              <a href="https://firebase.google.com/docs/auth/admin/custom-claims" target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-rose-800 underline">Official Firebase custom-claims guide <ExternalLink size={12} /></a>
+            </div>
             {permissionError && <p className="mt-2 text-amber-700">{permissionError}</p>}
             {accountActionError && <p role="alert" className="mt-2 text-red-700">{accountActionError}</p>}
           </>
