@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, ChevronDown, ImagePlus, LoaderCircle, Package, Save, Sparkles, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCategories } from '../context/CategoryContext';
@@ -18,7 +18,6 @@ const EMPTY = {
 };
 const PATTERNS = ['Checked', 'Striped', 'Zari Woven', 'Floral', 'Solid', 'Printed', 'Embroidered', 'Temple Border'];
 const BLOUSE = ['Included', 'Not included', 'Running blouse fabric'];
-const IMPORT_KEY = 'ashu_import_used_urls';
 
 const lines = value => [...new Set(String(value || '').split(/\r?\n/).map(item => item.trim()).filter(Boolean))];
 
@@ -63,21 +62,11 @@ function errorText(error) {
   return message;
 }
 
-function markImported(urls) {
-  if (!urls?.length) return;
-  try {
-    const previous = JSON.parse(localStorage.getItem(IMPORT_KEY) || '[]');
-    localStorage.setItem(IMPORT_KEY, JSON.stringify([...new Set([...previous, ...urls])]));
-  } catch { /* Import tracking is a convenience; product saving must still succeed. */ }
-}
-
 export default function AdminProductEditor() {
   const { id: productId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
   const { categories, saveCategories } = useCategories();
   const picker = useRef(null);
-  const imported = useRef(Array.isArray(location.state?.importSourceUrls) ? location.state.importSourceUrls : []);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -85,7 +74,7 @@ export default function AdminProductEditor() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
-  const [form, setForm] = useState(() => ({ ...EMPTY, media: Array.isArray(location.state?.media) ? location.state.media.join('\n') : '' }));
+  const [form, setForm] = useState(() => ({ ...EMPTY }));
   const [snapshot, setSnapshot] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
@@ -117,12 +106,10 @@ export default function AdminProductEditor() {
       setSnapshot(JSON.stringify(next)); setInitialized(true);
       setAdvanced(Boolean(next.fabric || next.pattern || next.workType || next.highlights || next.tags));
     } else {
-      const next = { ...EMPTY, media: Array.isArray(location.state?.media) ? location.state.media.join('\n') : '' };
+      const next = { ...EMPTY };
       setForm(next); setSnapshot(JSON.stringify(next)); setInitialized(true);
-      if (location.state?.media?.length) toast.success(location.state.media.length + ' photo(s) attached. Add the details and save.');
-      if (location.state) navigate(location.pathname, { replace: true, state: null });
     }
-  }, [loading, initialized, loadError, productId, products, location.state, location.pathname, navigate]);
+  }, [loading, initialized, loadError, productId, products]);
 
   const patch = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
   const addCategory = async () => {
@@ -249,7 +236,6 @@ export default function AdminProductEditor() {
       delete data.createdAt; delete data.updatedAt; delete data.imagePending;
       if (productId && !isFallback) await updateCatalogProduct(productId, data);
       else await createCatalogProduct(data);
-      markImported(imported.current);
       toast.success(status === 'active' ? 'Product published successfully.' : 'Product saved as a draft.');
       navigate('/admin/products', { replace: true });
     } catch (err) {
@@ -274,7 +260,6 @@ export default function AdminProductEditor() {
         </div>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">Add details and real photos in one place. Save a draft first, or publish when pricing, stock and photos are ready.</p>
       </div>
-      <Link to="/admin/import" onClick={guardUnsavedNavigation} className="dash-btn-ghost inline-flex items-center gap-2"><ImagePlus size={16} /> Choose from photo library</Link>
     </div>
 
     {(error || loadError) && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800">{error || loadError}</div>}
