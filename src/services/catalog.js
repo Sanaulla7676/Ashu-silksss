@@ -1,12 +1,12 @@
 import {
-  collection, addDoc, deleteDoc, doc, getDocs, orderBy, query,
+  collection, addDoc, deleteDoc, deleteField, doc, getDocs, orderBy, query,
   serverTimestamp, updateDoc,
 } from 'firebase/firestore';
 import { db, firebaseReady } from '../firebase';
 import { STATIC_IMPORT_PRODUCTS } from '../data/static-import-products';
 import { LATEST_PHOTO_PRODUCTS } from '../data/latest-photo-drop';
 import { mergeCatalogueProducts } from './catalogueMerge';
-import { mediaUrls } from '../utils';
+import { isVideoMedia, mediaUrls } from '../utils';
 
 const productsRef = () => {
   if (!firebaseReady || !db) throw new Error('Firebase is not configured. Add the existing VITE_FIREBASE_* project variables to the deployment environment.');
@@ -20,7 +20,7 @@ export async function getCatalogProducts() {
 
 export async function getAdminCatalogProducts() {
   const stored = await getCatalogProducts();
-  return mergeCatalogueProducts(stored, [...STATIC_IMPORT_PRODUCTS, ...LATEST_PHOTO_PRODUCTS]);
+  return mergeCatalogueProducts(stored, [...STATIC_IMPORT_PRODUCTS, ...LATEST_PHOTO_PRODUCTS], { includeHidden: true });
 }
 
 async function assertUniqueSku(sku, excludeId) {
@@ -46,6 +46,13 @@ function persistablePayload(product) {
   if (Object.prototype.hasOwnProperty.call(data, 'media')) {
     data.media = mediaUrls({ media: data.media });
   }
+  if (Array.isArray(data.imageIndexes)) delete data.imageIndex;
+  if (Object.prototype.hasOwnProperty.call(data, 'media') || Array.isArray(data.imageIndexes) || data.imageIndex !== undefined) {
+    const hasAssignedImages = mediaUrls({ media: data.media }).some(url => !isVideoMedia(url))
+      || (Array.isArray(data.imageIndexes) && data.imageIndexes.length > 0)
+      || (!Array.isArray(data.imageIndexes) && data.imageIndex !== undefined);
+    data.photoAssignmentsCleared = !hasAssignedImages;
+  }
   // Keep assigned catalogue/atlas photos as supplemental product views.
   // Uploading new photos must not silently erase an existing gallery.
   delete data.imagePending;
@@ -66,6 +73,7 @@ export async function createCatalogProduct(product) {
 export async function updateCatalogProduct(id, product) {
   if (!id) throw new Error('A product ID is required to update a record.');
   const payload = persistablePayload(product || {});
+  if (Array.isArray(payload.imageIndexes)) payload.imageIndex = deleteField();
   if (Object.prototype.hasOwnProperty.call(payload, 'sku')) await assertUniqueSku(payload.sku, id);
   await updateDoc(doc(productsRef(), id), { ...payload, updatedAt: serverTimestamp() });
 }

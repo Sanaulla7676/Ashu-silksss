@@ -23,6 +23,9 @@ const lines = value => [...new Set(String(value || '').split(/\r?\n/).map(item =
 
 function toForm(product) {
   const urls = mediaUrls(product);
+  const savedIndexes = Array.isArray(product.imageIndexes) && product.imageIndexes.length
+    ? product.imageIndexes
+    : product.imageIndex !== undefined ? [product.imageIndex] : [];
   return {
     ...EMPTY, ...product,
     status: product.status || 'active',
@@ -33,7 +36,8 @@ function toForm(product) {
     price: String(product.price ?? ''), mrp: String(product.mrp ?? ''),
     stock: String(product.stock ?? '0'), gstPercent: String(product.gstPercent ?? '5'),
     weight: String(product.weight ?? ''),
-    imageIndexes: Array.isArray(product.imageIndexes) ? product.imageIndexes : [],
+    imageIndexes: savedIndexes,
+    imageIndex: undefined,
   };
 }
 
@@ -67,6 +71,11 @@ export default function AdminProductEditor() {
   const navigate = useNavigate();
   const { categories, saveCategories } = useCategories();
   const picker = useRef(null);
+  const replacePicker = useRef(null);
+  const photoActionDialog = useRef(null);
+  const [photoAction, setPhotoAction] = useState(null);
+  const [replacementTarget, setReplacementTarget] = useState(null);
+  const [replacing, setReplacing] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -84,6 +93,12 @@ export default function AdminProductEditor() {
   const [newCategory, setNewCategory] = useState('');
   const [categoryBusy, setCategoryBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    if (photoAction && photoActionDialog.current && !photoActionDialog.current.open) {
+      photoActionDialog.current.showModal();
+    }
+  }, [photoAction]);
 
   useEffect(() => {
     let active = true;
@@ -182,8 +197,71 @@ export default function AdminProductEditor() {
     }
   };
 
-  const removeMedia = url => {
-    patch('media', media.filter(item => item !== url).join('\n'));
+  const closePhotoAction = () => {
+    if (photoActionDialog.current?.open) photoActionDialog.current.close();
+    setPhotoAction(null);
+  };
+
+  const removeSelectedPhoto = () => {
+    if (!photoAction) return;
+    if (photoAction.kind === 'uploaded') {
+      patch('media', media.filter(item => item !== photoAction.value).join('\n'));
+    } else {
+      setForm(prev => ({
+        ...prev,
+        imageIndexes: (prev.imageIndexes || []).filter(index => Number(index) !== Number(photoAction.value)),
+        imageIndex: undefined,
+      }));
+    }
+    toast.success('Photo removed from this product. Save your changes to apply it.');
+    closePhotoAction();
+  };
+
+  const replaceSelectedPhoto = async inputFiles => {
+    const file = Array.from(inputFiles || [])[0];
+    const target = replacementTarget;
+    if (!file || !target) return;
+    if (!cloudinaryReady) {
+      setError('Cloudinary is not configured. Restore the upload settings before replacing photos.');
+      setReplacementTarget(null);
+      return;
+    }
+    setReplacing(true);
+    setError('');
+    try {
+      const nextUrl = await uploadProductImage(file, productId || 'new');
+      setForm(prev => {
+        const nextMedia = lines(prev.media);
+        if (target.kind === 'uploaded') {
+          const index = nextMedia.indexOf(target.value);
+          if (index >= 0) nextMedia[index] = nextUrl;
+          else nextMedia.push(nextUrl);
+          return { ...prev, media: nextMedia.join('\n') };
+        }
+        return {
+          ...prev,
+          media: lines([...nextMedia, nextUrl].join('\n')).join('\n'),
+          imageIndexes: (prev.imageIndexes || []).filter(index => Number(index) !== Number(target.value)),
+          imageIndex: undefined,
+        };
+      });
+      toast.success('Replacement photo uploaded. Save the product to apply it.');
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setReplacing(false);
+      setReplacementTarget(null);
+      if (replacePicker.current) replacePicker.current.value = '';
+    }
+  };
+
+  const removeAllPhotos = () => {
+    const count = photoCount;
+    if (!count || !window.confirm('Remove all ' + count + ' photo view(s) from this product? This will be applied only after you save.')) return;
+    patch('media', '');
+    patch('imageIndexes', []);
+    patch('imageIndex', undefined);
+    toast.success('All product photo views marked for removal. Save to apply.');
   };
 
   const moveMedia = (url, direction) => {
@@ -234,10 +312,11 @@ export default function AdminProductEditor() {
       };
       delete data.id; delete data.isStaticFallback; delete data.isFallbackProduct;
       delete data.createdAt; delete data.updatedAt; delete data.imagePending;
+      if (Array.isArray(data.imageIndexes)) delete data.imageIndex;
       if (productId && !isFallback) await updateCatalogProduct(productId, data);
       else await createCatalogProduct(data);
       toast.success(status === 'active' ? 'Product published successfully.' : 'Product saved as a draft.');
-      navigate('/admin/products', { replace: true });
+      navigate(status === 'draft' ? '/admin/drafts' : '/admin/products', { replace: true });
     } catch (err) {
       setError(errorText(err));
     } finally { setBusy(false); }
@@ -349,19 +428,21 @@ export default function AdminProductEditor() {
 
       <aside className="grid gap-5 xl:sticky xl:top-24">
         <section className="dash-card p-5 sm:p-6">
-          <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900"><ImagePlus size={19} className="text-rose-700" /> Product photos</h2><p className="mt-1 text-sm leading-5 text-slate-500">Upload several angles at once. The first photo is the cover.</p></div><span className={'rounded-full px-2.5 py-1 text-xs font-bold ' + (photoCount >= 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{photoCount} / 3 views</span></div>
+          <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900"><ImagePlus size={19} className="text-rose-700" /> Product photos</h2><p className="mt-1 text-sm leading-5 text-slate-500">Upload several angles at once. The first photo is the cover.</p></div><span className={'rounded-full px-2.5 py-1 text-xs font-bold ' + (photoCount >= 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{photoCount} / 3 views</span><button type="button" className="text-xs font-semibold text-rose-800 hover:underline disabled:opacity-40" onClick={removeAllPhotos} disabled={uploading || replacing || !photoCount}>Remove all</button></div>
           <div className={'rounded-2xl border-2 border-dashed p-5 text-center ' + (dragging ? 'border-rose-600 bg-rose-50' : 'border-slate-300 bg-slate-50')} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white text-rose-700 shadow-sm"><Upload size={21} /></div>
             <p className="mt-3 text-sm font-bold text-slate-800">Drop photos here</p><p className="mt-1 text-xs leading-5 text-slate-500">JPG, PNG, WEBP or AVIF · up to 8 MB per image</p>
             <button type="button" className="dash-btn-primary mt-4 inline-flex items-center gap-2" onClick={() => picker.current?.click()} disabled={uploading || !cloudinaryReady}>{uploading ? <LoaderCircle size={16} className="animate-spin" /> : <ImagePlus size={16} />}{uploading ? 'Uploading ' + uploadProgress.done + '/' + uploadProgress.total : 'Choose multiple photos'}</button>
             <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={event => uploadFiles(event.target.files)} disabled={uploading || !cloudinaryReady} />
+            <input ref={replacePicker} type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden onChange={event => replaceSelectedPhoto(event.target.files)} disabled={uploading || replacing || !cloudinaryReady} />
             {!cloudinaryReady && <p role="status" className="mt-3 text-xs font-semibold text-amber-800">Uploads are not configured. Paste URLs under More product details.</p>}
             {uploading && <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-rose-700" style={{ width: (uploadProgress.done / Math.max(uploadProgress.total, 1) * 100) + '%' }} /></div>}
           </div>
           {images.length > 0 && <div className="mt-4"><div className="mb-2 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-slate-500">Uploaded images ({images.length})</span><span className="text-xs text-slate-500">First is cover</span></div><div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-3">
-            {images.map((url, index) => <div key={url} className={'relative aspect-[3/4] overflow-hidden rounded-xl border bg-amber-50 ' + (index === 0 ? 'border-rose-700 ring-2 ring-rose-100' : 'border-slate-200')}><ProductMedia url={url} productName={(form.name || 'Product') + ' photo ' + (index + 1)} colour={form.colour} /><span className="absolute bottom-1.5 left-1.5 rounded bg-slate-950/80 px-1.5 py-0.5 text-[10px] font-bold text-white">{index === 0 ? 'Cover' : index + 1}</span><div className="absolute right-1 top-1 flex gap-1"><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-slate-700 shadow-sm disabled:opacity-35" onClick={() => moveMedia(url, -1)} disabled={index === 0 || uploading} title="Move earlier" aria-label={'Move image ' + (index + 1) + ' earlier'}><ArrowUp size={13} /></button><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-slate-700 shadow-sm disabled:opacity-35" onClick={() => moveMedia(url, 1)} disabled={index === images.length - 1 || uploading} title="Move later" aria-label={'Move image ' + (index + 1) + ' later'}><ArrowDown size={13} /></button><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-700 shadow-sm" onClick={() => removeMedia(url)} disabled={uploading} title="Remove image" aria-label={'Remove image ' + (index + 1)}><X size={13} /></button></div></div>)}
+            {images.map((url, index) => <div key={url} className={'relative aspect-[3/4] overflow-hidden rounded-xl border bg-amber-50 ' + (index === 0 ? 'border-rose-700 ring-2 ring-rose-100' : 'border-slate-200')}><ProductMedia url={url} productName={(form.name || 'Product') + ' photo ' + (index + 1)} colour={form.colour} /><span className="absolute bottom-1.5 left-1.5 rounded bg-slate-950/80 px-1.5 py-0.5 text-[10px] font-bold text-white">{index === 0 ? 'Cover' : index + 1}</span><div className="absolute right-1 top-1 flex gap-1"><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-slate-700 shadow-sm disabled:opacity-35" onClick={() => moveMedia(url, -1)} disabled={index === 0 || uploading} title="Move earlier" aria-label={'Move image ' + (index + 1) + ' earlier'}><ArrowUp size={13} /></button><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-slate-700 shadow-sm disabled:opacity-35" onClick={() => moveMedia(url, 1)} disabled={index === images.length - 1 || uploading} title="Move later" aria-label={'Move image ' + (index + 1) + ' later'}><ArrowDown size={13} /></button><button type="button" className="grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-700 shadow-sm" onClick={() => setPhotoAction({ kind: 'uploaded', value: url, number: index + 1 })} disabled={uploading || replacing} title="Delete or replace image" aria-label={'Photo actions for image ' + (index + 1)}><X size={13} /></button></div></div>)}
           </div></div>}
-          {form.imageIndexes?.length > 0 && <div className="mt-4 rounded-xl border border-slate-200 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Existing catalogue views</p><p className="mt-1 text-xs leading-5 text-slate-500">These saved views are preserved alongside your uploaded photos.</p><div className="mt-2 grid grid-cols-4 gap-2">{form.imageIndexes.map((imageIndex, index) => <div key={imageIndex} className="aspect-[3/4] overflow-hidden rounded-lg border border-slate-200"><ProductMedia url="" productName={(form.name || 'Product') + ' existing photo ' + (index + 1)} colour={form.colour} imageIndex={imageIndex} /></div>)}</div></div>}
+          {form.imageIndexes?.length > 0 && <div className="mt-4 rounded-xl border border-slate-200 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Existing catalogue views ({form.imageIndexes.length})</p><p className="mt-1 text-xs leading-5 text-slate-500">These saved catalogue photos can be removed or replaced like uploaded photos.</p><div className="mt-2 grid grid-cols-4 gap-2">{form.imageIndexes.map((imageIndex, index) => <div key={imageIndex} className="relative aspect-[3/4] overflow-hidden rounded-lg border border-slate-200"><ProductMedia url="" productName={(form.name || 'Product') + ' existing photo ' + (index + 1)} colour={form.colour} imageIndex={imageIndex} /><button type="button" className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-700 shadow-sm" onClick={() => setPhotoAction({ kind: 'catalogue', value: imageIndex, number: index + 1 })} disabled={uploading || replacing} title="Delete or replace catalogue photo" aria-label={'Photo actions for catalogue image ' + (index + 1)}><X size={13} /></button></div>)}</div></div>}
+          <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">Delete removes a photo from this product after saving. The original file stays in media storage, so an image shared by another product is not accidentally destroyed.</p>
           {photoCount < 3 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Publish with at least three genuine views: full saree, pallu/border, and blouse or fabric detail. Do not use duplicate or unrelated photos.</p>}
           {photoCount >= 3 && <p className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-xs leading-5 text-emerald-900"><CheckCircle2 size={15} className="mt-0.5 shrink-0" /> Photo minimum met. Verify all views belong to this product.</p>}
         </section>
@@ -369,7 +450,22 @@ export default function AdminProductEditor() {
         <section className="dash-card p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Storefront preview</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">Preview only</span></div><div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="aspect-[4/3] bg-amber-50"><ProductMedia url={cover} productName={form.name || 'Product name'} colour={form.colour} imageIndex={form.imageIndexes?.[0] ?? form.imageIndex} /></div><div className="p-3.5"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-800">{form.category || 'Product category'}</p><h3 className="mt-1 line-clamp-2 font-display text-lg font-semibold text-slate-900">{form.name || 'Product name appears here'}</h3><p className="mt-1 text-sm font-bold text-slate-900">{shownPrice}</p><p className="mt-1 text-xs text-slate-500">{form.colour || 'Colour not specified'}{form.fabric ? ' · ' + form.fabric : ''}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">SKU</span><b className="mt-1 block break-all text-slate-800">{form.sku || 'Not assigned'}</b></div><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">Stock</span><b className="mt-1 block text-slate-800">{form.stockOnRequest ? 'On enquiry' : (form.stock || '0') + ' units'}</b></div></div><div className="mt-3"><span className={'rounded-full px-2.5 py-1 text-xs font-semibold ' + (canPublish ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{canPublish ? 'Ready to publish' : 'Needs details'}</span></div></section>
       </aside>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] backdrop-blur lg:left-64 sm:px-6"><div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3"><div className="hidden text-sm text-slate-500 sm:block">{dirty ? 'Unsaved changes' : 'All changes saved'} · {photoCount} photo view(s)</div><div className="ml-auto flex flex-wrap justify-end gap-2"><button type="button" className="dash-btn-ghost" onClick={leaveEditor} disabled={busy || uploading}>Cancel</button><button type="button" className="dash-btn-ghost" onClick={() => save('draft')} disabled={busy || uploading || !firebaseReady}><Save size={16} /> Save draft</button><button type="button" className="dash-btn-primary" onClick={() => save('active')} disabled={busy || uploading || !firebaseReady}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}{busy ? 'Saving…' : (original?.status === 'active' ? 'Save & publish' : 'Publish product')}</button></div></div></div>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] backdrop-blur lg:left-64 sm:px-6"><div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3"><div className="hidden text-sm text-slate-500 sm:block">{dirty ? 'Unsaved changes' : 'All changes saved'} · {photoCount} photo view(s)</div><div className="ml-auto flex flex-wrap justify-end gap-2"><button type="button" className="dash-btn-ghost" onClick={leaveEditor} disabled={busy || uploading || replacing}>Cancel</button><button type="button" className="dash-btn-ghost" onClick={() => save('draft')} disabled={busy || uploading || replacing || !firebaseReady}><Save size={16} /> Save draft</button><button type="button" className="dash-btn-primary" onClick={() => save('active')} disabled={busy || uploading || replacing || !firebaseReady}>{busy ? <LoaderCircle size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}{busy ? 'Saving…' : (original?.status === 'active' ? 'Save & publish' : 'Publish product')}</button></div></div></div>
+      {photoAction && <dialog ref={photoActionDialog} className="m-auto w-[min(460px,calc(100%-32px))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50" onClose={() => setPhotoAction(null)} onCancel={() => setPhotoAction(null)}>
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="text-xs font-bold uppercase tracking-wide text-rose-800">Photo {photoAction.number}</p><h3 className="mt-1 text-lg font-bold text-slate-900">What would you like to do?</h3></div>
+            <button type="button" className="grid h-8 w-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100" onClick={closePhotoAction} aria-label="Close photo actions"><X size={17} /></button>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Delete this image from the product, or upload a replacement. Changes remain in this form until you save.</p>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <button type="button" className="dash-btn-danger" onClick={removeSelectedPhoto}><X size={15} /> Delete this image</button>
+            <button type="button" className="dash-btn-primary" disabled={!cloudinaryReady || replacing} onClick={() => { setReplacementTarget(photoAction); closePhotoAction(); replacePicker.current?.click(); }}><ImagePlus size={15} /> Replace this image</button>
+          </div>
+          {!cloudinaryReady && <p className="mt-3 text-xs text-amber-800">Cloudinary uploads are not configured, so replacement uploads are unavailable.</p>}
+          <button type="button" className="mt-4 w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" onClick={closePhotoAction}>Cancel</button>
+        </div>
+      </dialog>}
     </form>
   </div>;
 }

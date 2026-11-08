@@ -35,7 +35,8 @@ function normalizeProduct(product, isFallback = false) {
   return result;
 }
 
-export function mergeCatalogueProducts(liveProducts = [], fallbackProducts = []) {
+export function mergeCatalogueProducts(liveProducts = [], fallbackProducts = [], options = {}) {
+  const includeHidden = Boolean(options.includeHidden);
   const fallbacks = Array.isArray(fallbackProducts) ? fallbackProducts : [];
   const live = Array.isArray(liveProducts) ? liveProducts : [];
   const fallbackBySku = new Map();
@@ -69,41 +70,51 @@ export function mergeCatalogueProducts(liveProducts = [], fallbackProducts = [])
     const id = String(fallback?.id || '');
     if (!key && id && fallbackIdsSeen.has(id)) continue;
     if (!key && id) fallbackIdsSeen.add(id);
-    if (!isVisible(fallback)) continue;
+    if (!includeHidden && !isVisible(fallback)) continue;
     output.push(normalizeProduct(fallback, true));
   }
 
   for (const [key, product] of liveBySku) {
-    if (!isVisible(product)) continue;
+    if (!includeHidden && !isVisible(product)) continue;
     const fallback = fallbackBySku.get(key);
     const merged = { ...(fallback || {}), ...product, id: product.id };
     const actualMedia = mediaUrls(product);
-    const supplementalIndexes = Array.isArray(product.imageIndexes) && product.imageIndexes.length
-      ? product.imageIndexes
-      : fallback?.imageIndexes;
-    const supplementalIndex = product.imageIndex !== undefined ? product.imageIndex : fallback?.imageIndex;
-    if (actualMedia.length) {
+    const hasExplicitImageIndexes = Array.isArray(product.imageIndexes);
+    const supplementalIndexes = hasExplicitImageIndexes ? product.imageIndexes : fallback?.imageIndexes;
+    const supplementalIndex = hasExplicitImageIndexes
+      ? product.imageIndex
+      : product.imageIndex !== undefined ? product.imageIndex : fallback?.imageIndex;
+    const photosWereExplicitlyCleared = product.photoAssignmentsCleared === true;
+    if (photosWereExplicitlyCleared) {
+      merged.media = actualMedia;
+      delete merged.imageIndexes;
+      delete merged.imageIndex;
+    } else if (actualMedia.length) {
       merged.media = actualMedia;
       if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
       else delete merged.imageIndexes;
       if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
+      else delete merged.imageIndex;
       delete merged.imagePending;
     } else if (mediaUrls(fallback).length) {
       merged.media = mediaUrls(fallback);
       if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
       else delete merged.imageIndexes;
       if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
+      else delete merged.imageIndex;
       delete merged.imagePending;
     } else {
       merged.media = [];
       if (Array.isArray(supplementalIndexes) && supplementalIndexes.length) merged.imageIndexes = supplementalIndexes;
+      else delete merged.imageIndexes;
       if (supplementalIndex !== undefined) merged.imageIndex = supplementalIndex;
+      else delete merged.imageIndex;
     }
     output.push(normalizeProduct(merged, false));
   }
 
   for (const product of liveWithoutSku) {
-    if (isVisible(product)) output.push(normalizeProduct(product, false));
+    if (includeHidden || isVisible(product)) output.push(normalizeProduct(product, false));
   }
   return output;
 }

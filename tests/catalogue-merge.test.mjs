@@ -30,6 +30,29 @@ test('draft record suppresses its fallback so a hidden product cannot reappear',
   assert.deepEqual(merged.map(p => p.sku), ['A-2']);
 });
 
+test('admin merge can include draft records while the default storefront merge hides them', () => {
+  const live = [{ id: 'firestore-draft', sku: 'D-1', name: 'Saved work', status: 'draft' }];
+  const fallback = [{ id: 'seed-draft', sku: 'D-1', name: 'Old seed copy', status: 'active' }];
+  assert.equal(mergeCatalogueProducts(live, fallback).some(product => product.id === 'firestore-draft'), false);
+  const admin = mergeCatalogueProducts(live, fallback, { includeHidden: true });
+  assert.equal(admin.some(product => product.id === 'firestore-draft' && product.status === 'draft'), true);
+  assert.equal(admin.some(product => product.id === 'seed-draft'), false);
+});
+
+test('explicitly cleared photo assignments suppress inherited atlas and fallback images', () => {
+  const merged = mergeCatalogueProducts(
+    [{ id: 'firestore-1', sku: 'A-1', name: 'Photo-cleared product', status: 'active', media: [], imageIndexes: [], photoAssignmentsCleared: true }],
+    [{ id: 'seed-1', sku: 'A-1', name: 'Seed product', media: ['https://cdn.example/seed.jpg'], imageIndexes: [24], imageIndex: 24 }],
+    { includeHidden: true },
+  );
+  const product = merged.find(item => item.id === 'firestore-1');
+  assert.ok(product);
+  assert.deepEqual(product.media, []);
+  assert.equal(product.imageIndexes, undefined);
+  assert.equal(product.imageIndex, undefined);
+  assert.equal(fallbackPhotoCount(product), 0);
+});
+
 test('uncatalogued products without SKUs remain available from fallback data', () => {
   const merged = mergeCatalogueProducts([], [{ id: 'no-sku', name: 'One-off' }]);
   assert.equal(merged.length, 1);

@@ -3,18 +3,20 @@ import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-do
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, ClipboardList, Palette, Image as ImageIcon, Users, Sparkles as ImportIcon,
-  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree, MessageSquare, Images, BarChart3, Plus, Copy, ShieldCheck,
+  Menu, X, LogOut, ExternalLink, Sparkles, FolderTree, MessageSquare, Images, BarChart3, Plus, Copy, ShieldCheck, FileClock, ImagePlus,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Products', icon: Package, end: true },
+  { to: '/admin/drafts', label: 'Drafts', icon: FileClock },
   { to: '/admin/products/new', label: 'Add product', icon: Plus },
   { to: '/admin/categories', label: 'Categories', icon: FolderTree },
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/enquiries', label: 'Enquiries', icon: MessageSquare },
   { to: '/admin/media', label: 'Media Library', icon: Images },
+  { to: '/admin/product-photos', label: 'Product Photo Manager', icon: ImagePlus },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/admin/bulk-import', label: 'Bulk Import', icon: ImportIcon },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
