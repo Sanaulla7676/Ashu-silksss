@@ -8,7 +8,7 @@ import { CATALOGUE_FIXES } from '../data/product-catalogue-fixes';
 import { NEW_ARRIVALS } from '../data/new-arrivals';
 import { PHOTO_UPDATES } from '../data/photo-updates';
 import { useCategories } from '../context/CategoryContext';
-import { mediaUrl, mediaUrls, productPhotoCount } from '../utils';
+import { mediaUrl, mediaUrls, productPhotoCount, MIN_PRODUCT_PHOTOS, MAX_PRODUCT_PHOTOS } from '../utils';
 import ProductMedia from '../components/ProductMedia';
 
 const empty = {
@@ -214,11 +214,13 @@ export default function Admin() {
 
   const draftProducts = products.filter(p => (p.status || 'active') === 'draft');
   const photoCount = productPhotoCount;
-  const productsBelowPhotoMinimum = products.filter(p => photoCount(p) < 3);
+  const productsBelowPhotoMinimum = products.filter(p => photoCount(p) < MIN_PRODUCT_PHOTOS);
   const activeProductsBelowPhotoMinimum = productsBelowPhotoMinimum.filter(p => (p.status || 'active') === 'active');
+  const productsAbovePhotoMaximum = products.filter(p => photoCount(p) > MAX_PRODUCT_PHOTOS);
   // Publishing is blocked until the listing has three assigned product photos.
   const readyDrafts = draftProducts.filter(p =>
-    photoCount(p) >= 3 && (p.priceOnRequest || Number(p.price) > 0) && (p.stockOnRequest || Number(p.stock ?? 0) > 0),
+    photoCount(p) >= MIN_PRODUCT_PHOTOS && photoCount(p) <= MAX_PRODUCT_PHOTOS
+      && (p.priceOnRequest || Number(p.price) > 0) && (p.stockOnRequest || Number(p.stock ?? 0) > 0),
   );
   const incompleteDrafts = draftProducts.filter(p => !readyDrafts.includes(p));
 
@@ -253,7 +255,8 @@ export default function Admin() {
   const qualityOptions = [
     { id: 'all', label: 'All products', count: baseProducts.length },
     { id: 'single-photo', label: 'Exactly 1 photo', count: baseProducts.filter(product => photoCount(product) === 1).length },
-    { id: 'needs-photos', label: 'Needs photos (<3)', count: baseProducts.filter(product => photoCount(product) < 3).length },
+    { id: 'needs-photos', label: 'Needs photos (<1)', count: baseProducts.filter(product => photoCount(product) < MIN_PRODUCT_PHOTOS).length },
+    { id: 'too-many-photos', label: 'Over 9 photos', count: baseProducts.filter(product => photoCount(product) > MAX_PRODUCT_PHOTOS).length },
     { id: 'missing-price', label: 'Missing price', count: baseProducts.filter(product => !product.priceOnRequest && !hasAnyPrice(product)).length },
     { id: 'low-stock', label: 'Low stock (1–3)', count: baseProducts.filter(isLowStock).length },
     { id: 'out-of-stock', label: 'Out of stock', count: baseProducts.filter(isOutOfStock).length },
@@ -261,7 +264,8 @@ export default function Admin() {
   ];
   const visibleProducts = baseProducts.filter(product => {
     if (qualityFilter === 'single-photo') return photoCount(product) === 1;
-    if (qualityFilter === 'needs-photos') return photoCount(product) < 3;
+    if (qualityFilter === 'needs-photos') return photoCount(product) < MIN_PRODUCT_PHOTOS;
+    if (qualityFilter === 'too-many-photos') return photoCount(product) > MAX_PRODUCT_PHOTOS;
     if (qualityFilter === 'missing-price') return !product.priceOnRequest && !hasAnyPrice(product);
     if (qualityFilter === 'low-stock') return isLowStock(product);
     if (qualityFilter === 'out-of-stock') return isOutOfStock(product);
@@ -307,14 +311,20 @@ export default function Admin() {
           <div className="flex items-start gap-3">
             <ImagePlus size={19} className="mt-0.5 shrink-0" />
             <div>
-              <b>Photo coverage needs attention: {productsBelowPhotoMinimum.length} product(s) have fewer than 3 photos.</b>
+              <b>Photo coverage needs attention: {productsBelowPhotoMinimum.length} product(s) have no photo.</b>
               <p className="mt-1">
-                {activeProductsBelowPhotoMinimum.length} are currently active. Add three genuinely different views per saree
-                (full drape, pallu/border and blouse/detail). Existing active products stay live until you update them;
-                new products start as drafts, and publishing is blocked until three photo views are assigned.
+                {activeProductsBelowPhotoMinimum.length} are currently active. Add at least one genuine photo per product.
+                You can add up to {MAX_PRODUCT_PHOTOS} photos for additional angles.
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {productsAbovePhotoMaximum.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <b>{productsAbovePhotoMaximum.length} product(s) have more than {MAX_PRODUCT_PHOTOS} photos.</b>
+          <p className="mt-1">Use the “Over 9 photos” filter and edit those listings before saving photo changes. Existing images remain unchanged until you edit them.</p>
         </div>
       )}
 

@@ -6,7 +6,7 @@ import { db, firebaseReady } from '../firebase';
 import { STATIC_IMPORT_PRODUCTS } from '../data/static-import-products';
 import { LATEST_PHOTO_PRODUCTS } from '../data/latest-photo-drop';
 import { mergeCatalogueProducts } from './catalogueMerge';
-import { isVideoMedia, mediaUrls } from '../utils';
+import { isVideoMedia, mediaUrls, productPhotoCount, MAX_PRODUCT_PHOTOS } from '../utils';
 
 const productsRef = () => {
   if (!firebaseReady || !db) throw new Error('Firebase is not configured. Add the existing VITE_FIREBASE_* project variables to the deployment environment.');
@@ -47,7 +47,12 @@ function persistablePayload(product) {
     data.media = mediaUrls({ media: data.media });
   }
   if (Array.isArray(data.imageIndexes)) delete data.imageIndex;
-  if (Object.prototype.hasOwnProperty.call(data, 'media') || Array.isArray(data.imageIndexes) || data.imageIndex !== undefined) {
+  const includesPhotoChanges = Object.prototype.hasOwnProperty.call(data, 'media')
+    || Array.isArray(data.imageIndexes) || data.imageIndex !== undefined;
+  if (includesPhotoChanges && productPhotoCount(data) > MAX_PRODUCT_PHOTOS) {
+    throw new Error('A product can have no more than ' + MAX_PRODUCT_PHOTOS + ' photos. Remove extra photos before saving.');
+  }
+  if (includesPhotoChanges) {
     const hasAssignedImages = mediaUrls({ media: data.media }).some(url => !isVideoMedia(url))
       || (Array.isArray(data.imageIndexes) && data.imageIndexes.length > 0)
       || (!Array.isArray(data.imageIndexes) && data.imageIndex !== undefined);

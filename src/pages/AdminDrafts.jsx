@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import ProductMedia from '../components/ProductMedia';
 import { firebaseReady } from '../firebase';
 import { createCatalogProduct, getAdminCatalogProducts, updateCatalogProduct } from '../services/catalog';
-import { isVideoMedia, mediaUrls, productPhotoCount } from '../utils';
+import { isVideoMedia, mediaUrls, productPhotoCount, MIN_PRODUCT_PHOTOS, MAX_PRODUCT_PHOTOS } from '../utils';
 
 function missingForDraft(product) {
   const missing = [];
@@ -14,7 +14,9 @@ function missingForDraft(product) {
   if (!String(product.category || '').trim()) missing.push('Category');
   if (!product.priceOnRequest && Number(product.price || 0) <= 0) missing.push('Selling price');
   if (!product.stockOnRequest && Number(product.stock || 0) <= 0) missing.push('Stock');
-  if (productPhotoCount(product) < 3) missing.push('3 genuine photos');
+  const photos = productPhotoCount(product);
+  if (photos < MIN_PRODUCT_PHOTOS) missing.push('at least 1 genuine photo');
+  if (photos > MAX_PRODUCT_PHOTOS) missing.push('no more than 9 photos');
   return missing;
 }
 

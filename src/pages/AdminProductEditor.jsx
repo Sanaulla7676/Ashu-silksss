@@ -7,7 +7,7 @@ import { firebaseReady } from '../firebase';
 import ProductMedia from '../components/ProductMedia';
 import { createCatalogProduct, getAdminCatalogProducts, updateCatalogProduct } from '../services/catalog';
 import { cloudinaryReady, uploadProductImage } from '../services/cloudinary';
-import { isVideoMedia, mediaUrls, productPhotoCount } from '../utils';
+import { isVideoMedia, mediaUrls, productPhotoCount, MIN_PRODUCT_PHOTOS, MAX_PRODUCT_PHOTOS } from '../utils';
 
 const EMPTY = {
   name: '', brand: 'Ashu Silks', category: 'Kanjeevaram Silk', sku: '', status: 'draft',
@@ -167,7 +167,8 @@ export default function AdminProductEditor() {
   const canPublish = Boolean(form.name.trim() && form.sku.trim())
     && (form.priceOnRequest || Number(form.price) > 0)
     && (form.stockOnRequest || Number(form.stock) > 0)
-    && photoCount >= 3;
+    && photoCount >= MIN_PRODUCT_PHOTOS
+    && photoCount <= MAX_PRODUCT_PHOTOS;
 
   useEffect(() => {
     if (!dirty) return undefined;
@@ -180,15 +181,25 @@ export default function AdminProductEditor() {
     const files = Array.from(inputFiles || []);
     if (!files.length) return;
     if (!cloudinaryReady) { setError('Cloudinary is not configured. Paste image URLs in More product details or restore the Cloudinary settings.'); return; }
-    setError(''); setUploading(true); setUploadProgress({ done: 0, total: files.length });
+    const remainingSlots = Math.max(0, MAX_PRODUCT_PHOTOS - photoCount);
+    if (!remainingSlots) {
+      toast.error('This product already has the maximum of ' + MAX_PRODUCT_PHOTOS + ' photos. Remove a photo before adding another.');
+      if (picker.current) picker.current.value = '';
+      return;
+    }
+    const filesToUpload = files.slice(0, remainingSlots);
+    const exceedsLimit = files.length > filesToUpload.length;
+    if (exceedsLimit) toast('Only ' + filesToUpload.length + ' selected photo(s) can be added. Each product is limited to ' + MAX_PRODUCT_PHOTOS + '.');
+    setError(''); setUploading(true); setUploadProgress({ done: 0, total: filesToUpload.length });
     let done = 0;
     try {
-      for (const file of files) {
+      for (const file of filesToUpload) {
         const url = await uploadProductImage(file, productId || 'new');
         setForm(prev => ({ ...prev, media: lines(String(prev.media || '') + '\n' + url).join('\n') }));
         done += 1; setUploadProgress({ done, total: files.length });
       }
-      toast.success(done + ' image' + (done === 1 ? '' : 's') + ' added.');
+      toast.success(done + ' photo' + (done === 1 ? '' : 's') + ' added.');
+      if (exceedsLimit) toast('The nine-photo limit was applied to this upload batch.');
     } catch (err) {
       setError((done ? done + ' image(s) uploaded successfully. ' : '') + errorText(err));
     } finally {
@@ -287,7 +298,8 @@ export default function AdminProductEditor() {
     if (status === 'active' && !form.priceOnRequest && price <= 0) return setError('Enter a selling price above ₹0, or select Price on request.');
     if (status === 'active' && !form.priceOnRequest && mrp > 0 && mrp < price) return setError('MRP cannot be lower than the selling price.');
     if (status === 'active' && !form.stockOnRequest && stock <= 0) return setError('Active products need stock above zero or Availability on enquiry enabled.');
-    if (status === 'active' && photoCount < 3) return setError('Add at least 3 genuine photo views before publishing. Current count: ' + photoCount + '.');
+    if (photoCount > MAX_PRODUCT_PHOTOS) return setError('A product can have no more than ' + MAX_PRODUCT_PHOTOS + ' photos. Remove ' + (photoCount - MAX_PRODUCT_PHOTOS) + ' photo(s) before saving.');
+    if (status === 'active' && photoCount < MIN_PRODUCT_PHOTOS) return setError('Add at least one genuine product photo before publishing.');
     const duplicate = products.find(item => String(item.sku || '').trim().toLowerCase() === sku.toLowerCase() && String(item.id) !== String(productId || ''));
     if (duplicate) return setError('SKU ' + sku + ' is already used by "' + (duplicate.name || 'another product') + '".');
     if (status === 'active' && !window.confirm(original?.status === 'active' ? 'Publish these changes to the live storefront now?' : 'Publish this product to the live storefront now?')) return;
@@ -428,11 +440,12 @@ export default function AdminProductEditor() {
 
       <aside className="grid gap-5 xl:sticky xl:top-24">
         <section className="dash-card p-5 sm:p-6">
-          <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900"><ImagePlus size={19} className="text-rose-700" /> Product photos</h2><p className="mt-1 text-sm leading-5 text-slate-500">Upload several angles at once. The first photo is the cover.</p></div><span className={'rounded-full px-2.5 py-1 text-xs font-bold ' + (photoCount >= 3 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{photoCount} / 3 views</span><button type="button" className="text-xs font-semibold text-rose-800 hover:underline disabled:opacity-40" onClick={removeAllPhotos} disabled={uploading || replacing || !photoCount}>Remove all</button></div>
+          <div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900"><ImagePlus size={19} className="text-rose-700" /> Product photos</h2><p className="mt-1 text-sm leading-5 text-slate-500">Add between {MIN_PRODUCT_PHOTOS} and {MAX_PRODUCT_PHOTOS} photos. The first photo is the cover.</p></div><span className={'rounded-full px-2.5 py-1 text-xs font-bold ' + (photoCount >= MIN_PRODUCT_PHOTOS && photoCount <= MAX_PRODUCT_PHOTOS ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{photoCount} / {MAX_PRODUCT_PHOTOS} photos</span><button type="button" className="text-xs font-semibold text-rose-800 hover:underline disabled:opacity-40" onClick={removeAllPhotos} disabled={uploading || replacing || !photoCount}>Remove all</button></div>
           <div className={'rounded-2xl border-2 border-dashed p-5 text-center ' + (dragging ? 'border-rose-600 bg-rose-50' : 'border-slate-300 bg-slate-50')} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white text-rose-700 shadow-sm"><Upload size={21} /></div>
-            <p className="mt-3 text-sm font-bold text-slate-800">Drop photos here</p><p className="mt-1 text-xs leading-5 text-slate-500">JPG, PNG, WEBP or AVIF · up to 8 MB per image</p>
-            <button type="button" className="dash-btn-primary mt-4 inline-flex items-center gap-2" onClick={() => picker.current?.click()} disabled={uploading || !cloudinaryReady}>{uploading ? <LoaderCircle size={16} className="animate-spin" /> : <ImagePlus size={16} />}{uploading ? 'Uploading ' + uploadProgress.done + '/' + uploadProgress.total : 'Choose multiple photos'}</button>
+            <p className="mt-3 text-sm font-bold text-slate-800">Drop photos here</p><p className="mt-1 text-xs leading-5 text-slate-500">JPG, PNG, WEBP or AVIF · up to 8 MB per image · maximum {MAX_PRODUCT_PHOTOS} photos per product</p>
+            <button type="button" className="dash-btn-primary mt-4 inline-flex items-center gap-2" onClick={() => picker.current?.click()} disabled={uploading || !cloudinaryReady || photoCount >= MAX_PRODUCT_PHOTOS}>{uploading ? <LoaderCircle size={16} className="animate-spin" /> : <ImagePlus size={16} />}{uploading ? 'Uploading ' + uploadProgress.done + '/' + uploadProgress.total : photoCount >= MAX_PRODUCT_PHOTOS ? 'Photo limit reached' : 'Choose multiple photos'}</button>
+            <p className="mt-2 text-xs text-slate-500">{Math.max(0, MAX_PRODUCT_PHOTOS - photoCount)} photo slot(s) remaining.</p>
             <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={event => uploadFiles(event.target.files)} disabled={uploading || !cloudinaryReady} />
             <input ref={replacePicker} type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden onChange={event => replaceSelectedPhoto(event.target.files)} disabled={uploading || replacing || !cloudinaryReady} />
             {!cloudinaryReady && <p role="status" className="mt-3 text-xs font-semibold text-amber-800">Uploads are not configured. Paste URLs under More product details.</p>}
@@ -443,8 +456,9 @@ export default function AdminProductEditor() {
           </div></div>}
           {form.imageIndexes?.length > 0 && <div className="mt-4 rounded-xl border border-slate-200 p-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Existing catalogue views ({form.imageIndexes.length})</p><p className="mt-1 text-xs leading-5 text-slate-500">These saved catalogue photos can be removed or replaced like uploaded photos.</p><div className="mt-2 grid grid-cols-4 gap-2">{form.imageIndexes.map((imageIndex, index) => <div key={imageIndex} className="relative aspect-[3/4] overflow-hidden rounded-lg border border-slate-200"><ProductMedia url="" productName={(form.name || 'Product') + ' existing photo ' + (index + 1)} colour={form.colour} imageIndex={imageIndex} /><button type="button" className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-white/95 text-red-700 shadow-sm" onClick={() => setPhotoAction({ kind: 'catalogue', value: imageIndex, number: index + 1 })} disabled={uploading || replacing} title="Delete or replace catalogue photo" aria-label={'Photo actions for catalogue image ' + (index + 1)}><X size={13} /></button></div>)}</div></div>}
           <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">Delete removes a photo from this product after saving. The original file stays in media storage, so an image shared by another product is not accidentally destroyed.</p>
-          {photoCount < 3 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Publish with at least three genuine views: full saree, pallu/border, and blouse or fabric detail. Do not use duplicate or unrelated photos.</p>}
-          {photoCount >= 3 && <p className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-xs leading-5 text-emerald-900"><CheckCircle2 size={15} className="mt-0.5 shrink-0" /> Photo minimum met. Verify all views belong to this product.</p>}
+          {photoCount < MIN_PRODUCT_PHOTOS && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">Add at least one genuine product photo before publishing. You can add up to {MAX_PRODUCT_PHOTOS} photos.</p>}
+          {photoCount >= MIN_PRODUCT_PHOTOS && photoCount <= MAX_PRODUCT_PHOTOS && <p className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-xs leading-5 text-emerald-900"><CheckCircle2 size={15} className="mt-0.5 shrink-0" /> Photo count is within the allowed range. Add more views when useful, up to {MAX_PRODUCT_PHOTOS}.</p>}
+          {photoCount > MAX_PRODUCT_PHOTOS && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">This product has {photoCount} photos. Remove at least {photoCount - MAX_PRODUCT_PHOTOS} before saving. The maximum is {MAX_PRODUCT_PHOTOS}.</p>}
         </section>
 
         <section className="dash-card p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Storefront preview</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">Preview only</span></div><div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="aspect-[4/3] bg-amber-50"><ProductMedia url={cover} productName={form.name || 'Product name'} colour={form.colour} imageIndex={form.imageIndexes?.[0] ?? form.imageIndex} /></div><div className="p-3.5"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-800">{form.category || 'Product category'}</p><h3 className="mt-1 line-clamp-2 font-display text-lg font-semibold text-slate-900">{form.name || 'Product name appears here'}</h3><p className="mt-1 text-sm font-bold text-slate-900">{shownPrice}</p><p className="mt-1 text-xs text-slate-500">{form.colour || 'Colour not specified'}{form.fabric ? ' · ' + form.fabric : ''}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">SKU</span><b className="mt-1 block break-all text-slate-800">{form.sku || 'Not assigned'}</b></div><div className="rounded-lg bg-slate-50 p-3"><span className="block text-slate-500">Stock</span><b className="mt-1 block text-slate-800">{form.stockOnRequest ? 'On enquiry' : (form.stock || '0') + ' units'}</b></div></div><div className="mt-3"><span className={'rounded-full px-2.5 py-1 text-xs font-semibold ' + (canPublish ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}>{canPublish ? 'Ready to publish' : 'Needs details'}</span></div></section>

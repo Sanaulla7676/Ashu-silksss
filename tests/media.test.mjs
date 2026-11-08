@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mediaUrl, mediaUrls, productImage } from '../src/utils.js';
+import { mediaUrl, mediaUrls, productImage, productPhotoCount, MIN_PRODUCT_PHOTOS, MAX_PRODUCT_PHOTOS } from '../src/utils.js';
 
 test('reads the first image from the current array format', () => {
   assert.equal(mediaUrl({ media: [' https://cdn.example/a.jpg ', 'https://cdn.example/b.jpg'] }), 'https://cdn.example/a.jpg');
@@ -51,4 +51,14 @@ test('optimizes import photos without applying studio backdrop removal', () => {
 
 test('leaves non-Cloudinary assets unchanged', () => {
   assert.equal(productImage('https://cdn.example/saree.webp', 360), 'https://cdn.example/saree.webp');
+});
+
+
+test('product photo policy is minimum one and maximum nine', () => {
+  assert.equal(MIN_PRODUCT_PHOTOS, 1);
+  assert.equal(MAX_PRODUCT_PHOTOS, 9);
+  assert.equal(productPhotoCount({ media: [] }), 0);
+  assert.equal(productPhotoCount({ media: ['https://cdn.example/one.jpg'] }), 1);
+  assert.equal(productPhotoCount({ media: Array.from({ length: 9 }, (_, i) => 'https://cdn.example/' + i + '.jpg') }), 9);
+  assert.equal(productPhotoCount({ media: Array.from({ length: 10 }, (_, i) => 'https://cdn.example/' + i + '.jpg') }), 10);
 });

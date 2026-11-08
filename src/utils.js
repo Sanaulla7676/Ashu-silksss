@@ -1,3 +1,6 @@
+export const MIN_PRODUCT_PHOTOS = 1;
+export const MAX_PRODUCT_PHOTOS = 9;
+
 export const money = n => new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
